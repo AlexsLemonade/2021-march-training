@@ -4,20 +4,48 @@ nav_title: Schedule
 ---
 
 A tentative schedule for the March 2021 CCDL Virtual Training Workshop appears below.
+⚠️ Not all links are working yet! ⚠️
 
 *Note: All times are [EDT (UTC−04:00)](https://www.timeanddate.com/time/zones/edt)*
 <!--See an example from a past virtual workshop here: https://github.com/AlexsLemonade/2020-may-training/wiki/Schedule --> 
 
-| Time        | Topic                                          |
-|-------------|------------------------------------------------|
+| Time        | Topic                                          | Location |
+|-------------|------------------------------------------------|----------|
 | **Day 1**   | **2021-03-22** <br> [Introduction to R and the Tidyverse](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/README.md)
-| 12:00 PM    | Welcome, Introductions and Getting Started     |
-| 1:00 PM     | [Introduction to base R](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/01-intro_to_base_R.nb.html) |
-| 2:30 PM     | [Introduction to ggplot2](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/02-intro_to_ggplot2.nb.html) | 
-| 3:30 PM     |  [Introduction to the Tidyverse](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/03-intro_to_tidyverse.nb.html) | 
+| 12:00 PM    | Welcome, Introductions and Getting Started     | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 1:00 PM     | [Introduction to base R](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/01-intro_to_base_R.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 2:30 PM     | [Introduction to ggplot2](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/02-intro_to_ggplot2.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 3:30 PM     | [Introduction to the Tidyverse](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/03-intro_to_tidyverse.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 4:30        | Questions and introduction to the exercise: | Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) |
+|             | [Exercise: Introduction to R](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/intro-to-R-tidyverse/01b-intro_to_base_R_exercise.Rmd) | 
+|             | [Consultation session](workshop-structure.md#consultation-sessions) | [Slack channel](../virtual-setup/slack-procedures.md#general-use) |
 | 5:00  PM    | End             |
-| **Day 2**   | **2021-03-23**  | 
-| **Day 3**   | **2021-03-24**  |               
-| **Day 4**   | **2021-03-25**  | 
-| **Day 5**   | **2021-03-26**  |     
-| 5:00        | Adjourn   |
+| **Day 2**   | **2021-03-23**  <br> [Introduction to Bulk RNA-seq, Day 1: Raw data & exploratory analysis](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/README.md) | 
+| 12:00 PM    | Bulk RNA-seq I: [QC, trim, and quantification with Salmon](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/01-qc_trim_quant.md)| Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 1:00 PM     | Bulk RNA-seq II: [Gene-Level Summaries with tximport](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/02-gastric_cancer_tximport.nb.html)| Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 2:00 PM     | Bulk RNA-seq III: [Exploratory Analyses](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/03-gastric_cancer_exploratory.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 3:00 PM     | Questions and introduction to the exercise: | Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) |
+|             | [*Guided* Exercise: Neuroblastoma Cell Line tximport](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/04-nb_cell_line_tximport.md) |
+|             | [Exercise: Exploratory Data Analysis](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/03b-exploratory_data_analysis_exercise.Rmd) | Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) |
+|             | [Consultation session](workshop-structure.md#consultation-sessions) | [Slack channel](../virtual-setup/slack-procedures.md#general-use) |
+| 5:00  PM    | End             |
+| **Day 3**   | **2021-03-24**  <br> [Bulk RNA-seq, Day 2: Differential expression and clustering](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/README.md) | 
+| 12:00 PM    | Bulk RNA-seq IV: [Differential Expression Analysis](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/05-nb_cell_line_DESeq2.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 1:30 PM     | [Clustering & heatmaps](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/machine-learning/01-openpbta_heatmap.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 2:30 PM     | [Cluster validation](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/machine-learning/02-openpbta_consensus_clustering.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 3:00 PM     | Questions and introduction to the exercise: | Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) |
+|             | [Exercise: Bulk RNA-seq](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/RNA-seq/06-bulk_rnaseq_exercise.Rmd) | 
+|             | [Consultation session](workshop-structure.md#consultation-sessions)  | [Slack channel](../virtual-setup/slack-procedures.md#general-use) |
+| 5:00 PM     | End             |             
+| **Day 4**   | **2021-03-25**  <br> [**_Introduction to Pathway Analysis_**](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/pathway-analysis/README.md) | | 
+| 12:00 PM    | [Pathway analysis I: Over-representation analysis](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/pathway-analysis/01-overrepresentation_analysis.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 1:15 PM     | [Pathway analysis II: Gene Set Enrichment Analysis](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/pathway-analysis/02-gene_set_enrichment_analysis.nb.html) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) | 
+| 2:15 PM     | [Pathway analysis III: Gene Set Variation Analysis](https://htmlpreview.github.io/?https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/pathway-analysis/03-gene_set_variation_analysis.nb.html) |  Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 3:00 PM     | Questions and introduction to the exercise: | Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) |
+|             | [Exercise: Pathway analysis of Medulloblastoma PDX](https://github.com/AlexsLemonade/training-modules/blob/{{site.release_tag}}/pathway-analysis/04-pathway_analysis_exercise.Rmd)| Zoom: [Breakout Rooms](../virtual-setup/zoom-procedures.md#using-zoom-breakout-rooms) | 
+|             | [Consultation session](workshop-structure.md#consultation-sessions) | [Slack channel](../virtual-setup/slack-procedures.md#general-use)|
+| 5:00 PM     | End || 
+| **Day 5**   | **2021-03-26**  <br> _**Consultation and Presentations**_ |     
+| 12:00 PM    | [Consultation session](workshop-structure.md#consultation-sessions)  | [Slack channel](../virtual-setup/slack-procedures.md#general-use) |
+| 2:30 PM     | [Participant presentations begin](workshop-structure.md#presentations) | Zoom: [Main Session](../virtual-setup/zoom-procedures.md#joining-a-zoom-call) |
+| 5:00 PM     | Adjourn   |
