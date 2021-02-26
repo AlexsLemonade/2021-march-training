@@ -72,7 +72,7 @@ If you identify an RNA-seq experiment from refine.bio that you'd like to use wit
 To retrieve metadata associated with an RNA-seq experiment (e.g., tissue, genotype), you can use an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
 Your instructors have put together a detailed example of how to get a TSV file of sample attributes with the appropriate accession codes for use with RNA-seq data from refine.bio.
 
-You can view a rendered version of the R Notebook with the example here: [`retrieve-SRAdb-metadata.nb.html`](https://alexslemonade.github.io/{{site.repository}}/working-with-your-data/retrieve-SRAdb-metadata.nb.html)
+You can view a rendered version of the R Notebook with the example here: [`retrieve-SRAdb-metadata.nb.html`](https://alexslemonade.github.io/2021-march-training/working-with-your-data/retrieve-SRAdb-metadata.nb.html)
 
 The relevant files from `SRAdb` have already been downloaded to the RStudio Server in the interest of space.
 
