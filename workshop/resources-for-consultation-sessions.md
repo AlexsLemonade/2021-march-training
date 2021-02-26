@@ -63,16 +63,19 @@ You may find our microarray example notebooks for working with refine.bio data h
 
 ### RNA-seq data
 
-The format of the RNA-seq data you can download from the web interface of refine.bio data will be matrices that differ from the pipeline that we cover in training.
+The format of the RNA-seq data you can download from the web interface of refine.bio data will be counts matrices that differ from the pipeline that we cover in training.
 We summarize our data to the gene-level with `tximport` before you download it, as opposed to implementing `tximeta` as we do in training.
 When downloading your data from refine.bio, we recommend checking the box that says "Skip quantile normalization for RNA-seq samples" to obtain the non-quantile normalized data.
 `DESeq2` can then be used for normalizing and transforming your non-quantile normalized RNA-seq data as demonstrated and recommended in our [example RNA-seq analysis notebooks](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/00-intro-to-rnaseq.html) based on how well it handles RNA-seq data and its great documentation.
-If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix`), **please send a Slack message to a CCDL instructor and they will get you access to the appropriate file.**
+
+If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix`), you can begin by following the instructions in the ["Obtain the dataset from refine.bio"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#23_Obtain_the_dataset_from_refinebio) section of any of our RNA-seq refinebio example notebooks and continue following the steps up until the ["Create a DESeqDataset"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#44_Create_a_DESeqDataset) section, as these steps remain pretty much the same across notebooks.
+Note that we recommend using non-quantile normalized data as the `DESeqDataSetFromMatrix` function requires a counts matrix and not a matrix with normalized or corrected value like TPMs.
+See this nice [`DESeq2` vignette](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input) for more information (Love et al., 2014).
 
 To retrieve metadata associated with an RNA-seq experiment (e.g., tissue, genotype), you can use an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
 Your instructors have put together a detailed example of how to get a TSV file of sample attributes with the appropriate accession codes for use with RNA-seq data from refine.bio.
 
-You can view a rendered version of the R Notebook with the example here: [`retrieve-SRAdb-metadata.nb.html`](https://alexslemonade.github.io/2021-march-training/working-with-your-data/retrieve-SRAdb-metadata.nb.html)
+You can view a rendered version of the R Notebook with the example here: [`retrieve-SRAdb-metadata.nb.html`](https://alexslemonade.github.io/{{site.repository}}/working-with-your-data/retrieve-SRAdb-metadata.nb.html)
 
 The relevant files from `SRAdb` have already been downloaded to the RStudio Server in the interest of space.
 
