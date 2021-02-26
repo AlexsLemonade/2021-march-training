@@ -50,6 +50,7 @@ You can read more about how we process data in refine.bio in [our documentation]
 If you'd like to practice some of the skills we cover in training or gain some additional ones like making highly customizable heatmaps with the [`ComplexHeatmap`](https://bioconductor.org/packages/release/bioc/html/ComplexHeatmap.html) R package, obtaining processed data from refine.bio is a great starting point.
 You may find [our examples for working with data from refine.bio](https://github.com/AlexsLemonade/refinebio-examples) helpful as you look to practice and expand your skills.
 In those examples, we use R Notebooks, which you will be familiar with from this workshop!
+See the ["Getting Started" section](https://alexslemonade.github.io/refinebio-examples/01-getting-started/getting-started.html) for more information on utilizing our example notebooks.
 
 You can start by searching [refine.bio](https://www.refine.bio/) for keywords relevant to your scientific questions and filtering to the organism and technology (e.g., microarray vs. RNA-seq; refine.bio contains both) you're interested in.
 
@@ -58,11 +59,15 @@ You can start by searching [refine.bio](https://www.refine.bio/) for keywords re
 In this version of our workshop, we won't work with microarray data, but there are hundreds of thousands of microarray samples available from refine.bio.
 The microarray datasets you can download from the refine.bio web interface are quantile normalized and are distributed as TSV files you can read into R using functions we cover in training.
 The metadata is included in your download in a TSV file that starts with `metadata_`.
+You may find our microarray example notebooks for working with refine.bio data helpful with your [differential expression](https://alexslemonade.github.io/refinebio-examples/02-microarray/differential-expression_microarray_01_2-groups.html), [dimension reduction](https://alexslemonade.github.io/refinebio-examples/02-microarray/dimension-reduction_microarray_01_pca.html), or [GSEA pathway analyses](https://alexslemonade.github.io/refinebio-examples/02-microarray/pathway-analysis_microarray_02_gsea.html), to name a few.
 
 ### RNA-seq data
 
-The format of the RNA-seq data you can download from the web interface of refine.bio data differs slightly from the pipeline that we cover in training.
-If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromTximport`), **please send a Slack message to a CCDL instructor and they will get you access to the appropriate file.**
+The format of the RNA-seq data you can download from the web interface of refine.bio data will be matrices that differ from the pipeline that we cover in training.
+We summarize our data to the gene-level with `tximport` before you download it.
+When downloading your data from refine.bio, we recommend checking the box that says "Skip quantile normalization for RNA-seq samples" to obtain the non-quantile normalized data.
+`DESeq2` can then be used for normalizing and transforming your non-quantile normalized RNA-seq data as demonstrated and recommended in our [example RNA-seq analysis notebooks](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/00-intro-to-rnaseq.html) based on how well it handles RNA-seq data and its great documentation.
+If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix`), **please send a Slack message to a CCDL instructor and they will get you access to the appropriate file.**
 
 To retrieve metadata associated with an RNA-seq experiment (e.g., tissue, genotype), you can use an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
 Your instructors have put together a detailed example of how to get a TSV file of sample attributes with the appropriate accession codes for use with RNA-seq data from refine.bio.
