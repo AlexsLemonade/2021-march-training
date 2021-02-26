@@ -64,7 +64,7 @@ You may find our microarray example notebooks for working with refine.bio data h
 ### RNA-seq data
 
 The format of the RNA-seq data you can download from the web interface of refine.bio data will be matrices that differ from the pipeline that we cover in training.
-We summarize our data to the gene-level with `tximport` before you download it.
+We summarize our data to the gene-level with `tximport` before you download it, as opposed to implementing `tximeta` as we do in training.
 When downloading your data from refine.bio, we recommend checking the box that says "Skip quantile normalization for RNA-seq samples" to obtain the non-quantile normalized data.
 `DESeq2` can then be used for normalizing and transforming your non-quantile normalized RNA-seq data as demonstrated and recommended in our [example RNA-seq analysis notebooks](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/00-intro-to-rnaseq.html) based on how well it handles RNA-seq data and its great documentation.
 If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix`), **please send a Slack message to a CCDL instructor and they will get you access to the appropriate file.**
