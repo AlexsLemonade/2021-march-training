@@ -59,7 +59,8 @@ You can start by searching [refine.bio](https://www.refine.bio/) for keywords re
 In this version of our workshop, we won't work with microarray data, but there are hundreds of thousands of microarray samples available from refine.bio.
 The microarray datasets you can download from the refine.bio web interface are quantile normalized and are distributed as TSV files you can read into R using functions we cover in training.
 The metadata is included in your download in a TSV file that starts with `metadata_`.
-You may find our microarray example notebooks for working with refine.bio data helpful with your [differential expression](https://alexslemonade.github.io/refinebio-examples/02-microarray/differential-expression_microarray_01_2-groups.html), [dimension reduction](https://alexslemonade.github.io/refinebio-examples/02-microarray/dimension-reduction_microarray_01_pca.html), or [GSEA pathway analyses](https://alexslemonade.github.io/refinebio-examples/02-microarray/pathway-analysis_microarray_02_gsea.html), to name a few.
+You may find our [microarray example notebooks](https://alexslemonade.github.io/refinebio-examples/02-microarray/00-intro-to-microarray.html) for working with refine.bio data helpful with your [differential expression](https://alexslemonade.github.io/refinebio-examples/02-microarray/differential-expression_microarray_01_2-groups.html), [dimension reduction](https://alexslemonade.github.io/refinebio-examples/02-microarray/dimension-reduction_microarray_01_pca.html), or [GSEA pathway analyses](https://alexslemonade.github.io/refinebio-examples/02-microarray/pathway-analysis_microarray_02_gsea.html), to name a few.
+Note that what we cover in training is largely RNA-seq specific, so if you obtain microarray data from refine.bio, you should not expect to use the exact same code as we do in training.
 
 ### RNA-seq data
 
@@ -68,12 +69,13 @@ We summarize our data to the gene-level with `tximport` ([docs](http://docs.refi
 When downloading your data from refine.bio, we recommend checking the box that says "Skip quantile normalization for RNA-seq samples" to obtain the non-quantile normalized data ([docs](http://docs.refine.bio/en/latest/main_text.html#skipping-quantile-normalization-for-rna-seq-experiments)).
 You will receive a TSV file that you can use as the counts matrix input for a [`DESeqDataSet`](https://www.rdocumentation.org/packages/DESeq2/versions/1.12.3/topics/DESeqDataSet-class).
 Note that we recommend using non-quantile normalized data as the `DESeqDataSetFromMatrix()` function requires a counts matrix and not a matrix with normalized or corrected value like TPMs.
+You will also need the associated metadata file, which is included in your download in a TSV file that starts with `metadata_`, to create a `DESeqDataSet` object.
 See this nice [`DESeq2` vignette](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input) for more information (Love *et al.*, 2014).
 You can read more about using `DESeq2` with refine.bio data [here](#https://alexslemonade.github.io/refinebio-examples/03-rnaseq/00-intro-to-rnaseq.html#about-deseq2).
 
 If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix()`), you can begin by following the instructions in the ["Obtain the dataset from refine.bio"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#23_Obtain_the_dataset_from_refinebio) section of any of our RNA-seq refinebio example notebooks and continue following the steps up until the ["Create a DESeqDataset"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#44_Create_a_DESeqDataset) section, as these steps remain pretty much the same across notebooks.
 
-To retrieve metadata associated with an RNA-seq experiment (e.g., tissue, genotype), you can use an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
+The metadata can sometimes be incomplete in refine.bio, particularly for RNA-seq samples. In these cases, you see if there's more metadata available metadata associated with an RNA-seq experiment (e.g., tissue, genotype) using an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
 Your instructors have put together a detailed example of how to get a TSV file of sample attributes with the appropriate accession codes for use with RNA-seq data from refine.bio.
 
 You can view a rendered version of the R Notebook with the example here: [`retrieve-SRAdb-metadata.nb.html`](https://alexslemonade.github.io/{{site.repository}}/working-with-your-data/retrieve-SRAdb-metadata.nb.html)
