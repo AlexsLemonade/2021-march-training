@@ -60,7 +60,7 @@ In this version of our workshop, we won't work with microarray data, but there a
 The microarray datasets you can download from the refine.bio web interface are quantile normalized and are distributed as TSV files you can read into R using functions we cover in training.
 The metadata is included in your download in a TSV file that starts with `metadata_`.
 You may find our [microarray example notebooks](https://alexslemonade.github.io/refinebio-examples/02-microarray/00-intro-to-microarray.html) for working with refine.bio data helpful with your [differential expression](https://alexslemonade.github.io/refinebio-examples/02-microarray/differential-expression_microarray_01_2-groups.html), [dimension reduction](https://alexslemonade.github.io/refinebio-examples/02-microarray/dimension-reduction_microarray_01_pca.html), or [GSEA pathway analyses](https://alexslemonade.github.io/refinebio-examples/02-microarray/pathway-analysis_microarray_02_gsea.html), to name a few.
-Note that what we cover in training is largely RNA-seq specific, so if you obtain microarray data from refine.bio, you should not expect to use the exact same code as we do in training.
+Note that our training material is largely RNA-seq specific, so if you obtain microarray data from refine.bio, you should not expect to use the exact same code as we do in training.
 
 ### RNA-seq data
 
