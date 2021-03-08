@@ -17,6 +17,7 @@ On this page, we've assembled some resources you may find helpful during these s
   - [RNA-seq data](#rna-seq-data)
     - [Getting a copy of the SRAdb example notebook in your home directory on RStudio Server](#getting-a-copy-of-the-sradb-example-notebook-in-your-home-directory-on-rstudio-server)
 - [Transcriptome indices for non-human organisms](#transcriptome-indices-for-non-human-organisms)
+  - [_Homo sapiens_](#homo-sapiens)
   - [_Mus musculus_](#mus-musculus)
   - [_Danio rerio_](#danio-rerio)
   - [_Canis lupus familiaris_](#canis-lupus-familiaris)
@@ -105,6 +106,9 @@ You can open the Rmd file as normal.
 During the introduction to bulk RNA-seq module, we used human data and included a transcriptome index for human in `training-modules/RNA-seq/index/`.
 
 If you have non-human RNA-seq data you would like to quantify, or want to experiment with slightly different index parameters, we have prepared indices for select organisms relevant to the study of childhood cancer.
+Note that for most of these, you will need to perform a few extra steps to read in the quantification data with `tximeta` after performing quantification.
+Please see the notebook [`RNASeq/00c-tximeta_other_species.Rmd`](https://github.com/AlexsLemonade/training-modules/blob/master/RNA-seq/00c-tximeta_other_species.Rmd) for details on how to set this up. 
+
 If you have RNA-seq data for an organism that is not listed, please post in the training-specific Slack channel and let your instructors know.
 
 ### _Homo sapiens_
