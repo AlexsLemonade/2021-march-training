@@ -1,4 +1,4 @@
-## Childhood Cancer Data Lab - 2021 March Training Workshop
+# Childhood Cancer Data Lab - 2021 March Training Workshop
 
 Please view the course website to get started: https://alexslemonade.github.io/2021-march-training/
 
