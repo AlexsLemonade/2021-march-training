@@ -102,11 +102,21 @@ You can open the Rmd file as normal.
 
 ## Transcriptome indices for non-human organisms
 
-During the introduction to bulk RNA-seq module, we used human data.
-We include transcriptome indices for human in `training-modules/RNA-seq/index/`.
-If you have non-human RNA-seq data you would like to quantify, we have prepared indices for select non-human organisms relevant to the study of childhood cancer.
+During the introduction to bulk RNA-seq module, we used human data and included a transcriptome index for human in `training-modules/RNA-seq/index/`.
 
+If you have non-human RNA-seq data you would like to quantify, or want to experiment with slightly different index parameters, we have prepared indices for select organisms relevant to the study of childhood cancer.
 If you have RNA-seq data for an organism that is not listed, please post in the training-specific Slack channel and let your instructors know.
+
+### _Homo sapiens_
+
+Ensembl GRCh38 (hg38) v95
+
+| File description | File use | File path |
+|------------------|----------|-----------|
+| Human Salmon index `-k 23` | Salmon index for use with `salmon quant`; appropriate for reads shorter than 75bp or for increased sensitivity with `--validateMappings` ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/hg38_cdna/salmon_index/short` |
+| Human Salmon index `-k 31` | Salmon index for use with `salmon quant`; appropriate for reads 75bp or longer ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/hg38_cdna/salmon_index/long` |
+
+
 
 ### _Mus musculus_
 
