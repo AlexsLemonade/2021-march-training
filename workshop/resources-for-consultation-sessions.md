@@ -116,7 +116,6 @@ Ensembl GRCm38 (mm10) v95
 |------------------|----------|-----------|
 | Mouse Salmon index `-k 23` | Salmon index for use with `salmon quant`; appropriate for reads shorter than 75bp or for increased sensitivity with `--validateMappings` ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/mm10_cdna/salmon_index/short` |
 | Mouse Salmon index `-k 31` | Salmon index for use with `salmon quant`; appropriate for reads 75bp or longer ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/mm10_cdna/salmon_index/long` |
-| Mouse transcript to gene mapping tsv (`tx2gene`) | TSV for `tx2gene` argument to `tximport::tximport()` | `~/shared-data/reference/tx2gene/Mus_musculus.GRCm38.95_tx2gene.tsv` |
 
 ### _Danio rerio_
 
@@ -126,7 +125,6 @@ Ensembl GRCz11 v95
 |------------------|----------|-----------|
 | Zebrafish Salmon index `-k 23` | Salmon index for use with `salmon quant`; appropriate for reads shorter than 75bp or for increased sensitivity with `--validateMappings` ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/z11_cdna/salmon_index/short` |
 | Zebrafish Salmon index `-k 31` | Salmon index for use with `salmon quant`; appropriate for reads 75bp or longer ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/z11_cdna/salmon_index/long` |
-| Zebrafish transcript to gene mapping tsv (`tx2gene`) | TSV for `tx2gene` argument to `tximport::tximport()` | `~/shared-data/reference/tx2gene/Danio_rerio.GRCz11.95_tx2gene.tsv` |
 
 ### _Canis lupus familiaris_
 
@@ -136,4 +134,3 @@ Ensembl CanFam3.1 v95
 |------------------|----------|-----------|
 | Dog Salmon index `-k 23` | Salmon index for use with `salmon quant`; appropriate for reads shorter than 75bp or for increased sensitivity with `--validateMappings` ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/CanFam3p1_cdna/salmon_index/short` |
 | Dog Salmon index `-k 31` | Salmon index for use with `salmon quant`; appropriate for reads 75bp or longer ([docs](https://salmon.readthedocs.io/en/latest/salmon.html#preparing-transcriptome-indices-mapping-based-mode)) | `~/shared-data/reference/refgenie/CanFam3p1_cdna/salmon_index/long` |
-| Dog transcript to gene mapping tsv (`tx2gene`) | TSV for `tx2gene` argument to `tximport::tximport()` | `~/shared-data/reference/tx2gene/Canis_familiaris.CanFam3.1.95_tx2gene.tsv` |
