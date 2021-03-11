@@ -1,5 +1,6 @@
 ---
 title: Resources for Consultation Sessions
+nav_title: Consultation Sessions
 ---
 
 Our consultation sessions are designed for you to spend your time as you would like with the support of your instructors.
@@ -15,7 +16,6 @@ On this page, we've assembled some resources you may find helpful during these s
 - [Obtaining practice datasets](#obtaining-practice-datasets)
   - [Microarray data](#microarray-data)
   - [RNA-seq data](#rna-seq-data)
-    - [Getting a copy of the SRAdb example notebook in your home directory on RStudio Server](#getting-a-copy-of-the-sradb-example-notebook-in-your-home-directory-on-rstudio-server)
 - [Transcriptome indices for non-human organisms](#transcriptome-indices-for-non-human-organisms)
   - [_Homo sapiens_](#homo-sapiens)
   - [_Mus musculus_](#mus-musculus)
@@ -75,6 +75,8 @@ You can read more about using `DESeq2` with refine.bio data [here](https://alexs
 
 If you identify an RNA-seq experiment from refine.bio that you'd like to use with `DESeq2` (specifically with `DESeqDataSetFromMatrix()`), you can begin by following the instructions in the ["Obtain the dataset from refine.bio"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#23_Obtain_the_dataset_from_refinebio) section of any of our RNA-seq refinebio example notebooks and continue following the steps up until the ["Create a DESeqDataset"](https://alexslemonade.github.io/refinebio-examples/03-rnaseq/clustering_rnaseq_01_heatmap.html#44_Create_a_DESeqDataset) section, as these steps remain pretty much the same across notebooks. Note that you will also need the associated metadata file, which is included in your download in a TSV file that starts with `metadata_`, to create a `DESeqDataSet` object.
 
+<!-- Commenting out SRAdb for now
+
 The metadata available in refine.bio can sometimes be incomplete, particularly for RNA-seq samples. 
 You can see if there's more metadata associated with an RNA-seq experiment (e.g., tissue, genotype) using an R package called [`SRAdb`](https://www.bioconductor.org/packages/release/bioc/html/SRAdb.html).
 Your instructors have put together a detailed example of how to get a TSV file of sample attributes with the appropriate accession codes for use with RNA-seq data from refine.bio.
@@ -100,6 +102,8 @@ cp -avr shared-data/working-with-your-data/retrieve-SRAdb-metadata.Rmd
 ```
 
 You can open the Rmd file as normal.
+
+End SRAdb section -->
 
 ## Transcriptome indices for non-human organisms
 
