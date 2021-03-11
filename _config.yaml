@@ -1,4 +1,4 @@
-title: CCDL Training
+title: CCDL Virtual Workshop
 training_title: 2021 March Training
 # The name of the repository (e.g., 2020-may-training)
 # We use training-specific-template to help with development
@@ -36,6 +36,8 @@ header_pages:
   - workshop/SCHEDULE.md
   - workshop/workshop-structure.md
   - workshop/workshop-materials.md
+  - workshop/resources-for-consultation-sessions.md
+  - workshop/posting-errors-guidelines.md
 author: Childhood Cancer Data Lab
 # email: user@site
 twitter_username: CancerDataLab
