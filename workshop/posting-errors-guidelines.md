@@ -55,7 +55,8 @@ To demonstrate what we mean by these guidelines we will walk through an example.
 
 ## A troubleshooting example
 
-In this example, we're using our exercise notebook `04a-intro_to_R_exercise.Rmd`.
+In this example, we're using an exercise notebook called `04a-intro_to_R_exercise.Rmd`.
+_⚠️ This notebook name is out of date! It is now called `exercise_02-intro_to_R.Rmd` but the points here still apply!_
 
 Below is a screenshot of what this error would look like when encountering it on [our RStudio Server](../virtual-setup/rstudio-login.md).
 
