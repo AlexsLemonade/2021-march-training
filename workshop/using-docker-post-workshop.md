@@ -15,12 +15,11 @@ The image we use will allow you to access an RStudio Server in your local contai
 
 #### Docker installation
 
-You can find instructions for installing Docker on Mac OS or Windows 10 Pro [here](../docker-install/INSTALLATION-INSTRUCTIONS.md).
-_Note: Windows Home has only recently become supported and requires different steps than what is linked above ([Docker documentation](https://docs.docker.com/docker-for-windows/install-windows-home/))._
+You can find instructions for installing Docker on your OS in the Docker documentation: <https://docs.docker.com/get-docker/>
 
 #### Obtaining the Docker image
 
-Once you've installed Docker and Kitematic, you will need to pull the appropriate image using command line.
+Once you've installed Docker, you will need to pull the appropriate image using command line.
 
 - In *Mac*, search for and open `Terminal`.
 - In *Windows*, search for and open `Command Prompt`.
@@ -45,14 +44,14 @@ For this container, the second part will be `/home/rstudio/kitematic`.
 If we were to have a folder on our computer located at `~/ccdl/training` we wanted to use, what we would use the following as part of our `docker run` command:
 
 ```
---volume ~/ccdl/training:/home/rstudio/training
+--volume ~/ccdl/training:/home/rstudio/ccdl-training
 ```
 
 To run the container, change the `<PASSWORD>` in the line below to whatever you'd like and `<DIRECTORY ON YOUR COMPUTER>` to the folder on your computer that you'd like to read from and write to.
 
 ```
 docker run \
-  --volume <DIRECTORY ON YOUR COMPUTER>:/home/rstudio/training
+  --volume <DIRECTORY ON YOUR COMPUTER>:/home/rstudio/ccdl-training
   -e PASSWORD=<PASSWORD> -p 8787:8787 {{site.docker_user}}/{{site.docker_repo}}:{{site.docker_tag}}
 ```
 
@@ -71,7 +70,7 @@ It should look like a series of 4 numbers separated by `.` and followed by `:878
 Paste that text into a web browser and hit enter.
 This should bring up an RStudio window that you can log into with username `rstudio` and the password that you entered above.
 
-Navigate to the `training` folder in the `Files` pane in RStudio and check to make sure you can see the contents of the folder you supplied as `<DIRECTORY ON YOUR COMPUTER>` above.
+Navigate to the `ccdl-training` folder in the `Files` pane in RStudio and check to make sure you can see the contents of the folder you supplied as `<DIRECTORY ON YOUR COMPUTER>` above.
 
 #### Parting thoughts
 
