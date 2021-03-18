@@ -34,12 +34,12 @@ docker pull {{site.docker_user}}/{{site.docker_repo}}:{{site.docker_tag}}
 
 **To work with files on your computer, you will need to set a local folder as your volume.**
 It is important to note that anything that you save to the Docker container but not in a local folder is ephemeral - once you destroy the container, it disappears!
-For this reason, it's important to save anything you create in the `kitematic` folder in RStudio.
+For this reason, it's important to save anything you create in the `ccdl-training` folder in RStudio.
 
 To set a local folder as your volume, we need to use [`--volume`](https://docs.docker.com/storage/volumes/) when we run the command to start the container.
 
 What we provide to `--volume` follows a particular format: the folder on your computer that you want to read and write to and the location in the container to mount to, separated by a `:`. 
-For this container, the second part will be `/home/rstudio/kitematic`.
+For this container, the second part will be `/home/rstudio/ccdl-training`.
 
 If we were to have a folder on our computer located at `~/ccdl/training` we wanted to use, what we would use the following as part of our `docker run` command:
 
