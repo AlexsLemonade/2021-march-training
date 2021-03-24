@@ -1,0 +1,303 @@
+---
+title: "Day 2: RNA-seq Supplementary Notebook"
+author: Candace Savonen
+date: 2021-03-23
+output:   
+  html_notebook: 
+    toc: true
+    toc_float: true
+---
+
+## Introduction
+
+This notebook is designed to address questions that came up in the Introduction to RNA-seq module during CCDL training. 
+
+- [A bit on file paths and file organization](#file-paths)
+- [How to find out how much each gene contributes to a particular Principal Component and other fun things with PCA](#principal-components-analysis)
+
+### How to use this notebook: 
+
+1) Click the `Code` button in the upper right of this page and choose `Download Rmd` to save this notebook (`2021-03-23_muddiest_points.Rmd`) to your computer.   
+2) Navigate to RStudio server.  
+3) In your `File` pane, go to `training-modules/RNA-seq`.     
+4) Click the `Upload` button in your `File` pane.   
+5) Click `Choose file` and find this `Rmd` file on your computer.   
+6) Click `OK`.   
+
+Now you can open up this file and run it on the Server. 
+
+# File Paths
+
+![The directory structure of this particular project](https://raw.githubusercontent.com/AlexsLemonade/training-modules/2021-march/RNA-seq/diagrams/gastric_cancer_structure.png)
+
+## Directory Creation Syntax
+
+Let's say we want to create a directory to hold plots that contains subdirectories within it for separate analyses.
+We'll call the first analysis `clustering` in the example below.
+
+### `file.path()`
+
+`file.path()` adds a file path separator (`/` on Mac and Linux operating system, which is the operating system that our RStudio Server runs on) between separate folders or directory.
+Because file path separators can differ between your computer and the computer of someone who wants to use your code, we use `file.path()` instead of typing out `"plots/clustering"`.
+Each _argument_ to `file.path()` is a directory or file name.
+
+```{r}
+file.path("plots", "clustering")
+```
+
+In practice, it can make it easier to change file paths if you update an analysis in the future because you can add an argument to `file.path()`:
+
+```{r}
+file.path("plots", "clustering", "lncRNA")
+```
+
+We can assign the output of `file.path()` to an object.
+
+```{r}
+clustering_dir <- file.path("plots", "clustering")
+```
+
+If you assign the output of `file.path()` to an object at the beginning of a script or notebook, when you revisit an analysis or alter an analysis in the future you can take a quick look at the top at your script or notebook and understand where to look for the output.
+`clustering_dir` in the example above is a character vector of length 1 and behaves the same way as repeating `file.path("plots", "clustering")` anywhere you need it.
+
+# Principal Components Analysis
+
+More recommended reading on PCA: 
+
+- [Principal Components Analysis Explained Visually](https://setosa.io/ev/principal-component-analysis/)
+- [Quantitative Understanding in Biology Principal Component Analysis](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf)
+
+Instead of using DESeq2 to run our PCA and plotting for us, we can do this using `prcomp()` function and ggplot2.
+It often requires a few more steps, but ultimately gives us more information and more control over our plot. 
+
+We'll use the same `gastric-cancer` dataset we used in lecture but perform PCA outside of DESeq2 and show how to obtain gene loadings. 
+
+![](diagrams/rna-seq_6.png)
+
+These first steps are identical to what we did to set up this dataset in `02-gastric_cancer_exploratory-live.Rmd`. 
+
+### Load libraries 
+
+```{r}
+library(DESeq2)
+library(ggplot2)
+```
+
+### Declare directories and files
+
+```{r input-files}
+# Main data directory
+data_dir <- file.path("data", "gastric-cancer")
+
+# directory with the tximeta processed data
+txi_dir <- file.path(data_dir, "txi")
+txi_file <- file.path(txi_dir, "gastric-cancer_tximeta.RDS")
+```
+
+```{r read-rds}
+# Read in the RDS file we created in the last notebook
+gene_summarized <- readr::read_rds(txi_file)
+```
+
+### Set up DESeq2 object
+
+```{r ddset}
+ddset <- DESeqDataSet(gene_summarized,
+                      design = ~ tissue)
+```
+
+### Variance stabilizing transformation
+
+```{r vst}
+vst_data <- vst(ddset)
+```
+
+### Set up a matrix 
+
+Now, we'll briefly show you how to use built-in functions for PCA. 
+The PCA functions we are going to use can be used on any matrix.
+
+But because our data is a specialized object (a`DESeqTransform`, which is structured similarly to the `SummarizedExperiment` we have used before), we will first extract the assay data as a matrix.
+
+```{r}
+vst_mat <- assay(vst_data)
+```
+
+Often PCA will be as informative (and faster to calculate) if we only run it on a high variance subset of the genes. 
+Following the default behavior of the `DESeq2` function `plotPCA()` that we used previously, we will use the top 500 genes in this example. 
+Here, `apply(., 1, var)` calculates the variance for each row/gene. 
+
+```{r}
+high_var_subset <- vst_mat %>% 
+  as.data.frame() %>% 
+  dplyr::top_n(apply(., 1, var), n = 500)
+```
+
+Let's take a look at what the these data look like. 
+Samples are columns and rows are genes. 
+
+```{r}
+head(high_var_subset)
+```
+
+`prcomp()` expects the features (in our case, genes) to be columns and the observations (samples) to be rows, but in our data and often gene expression matrices in general, genes are actually rows. 
+So we have to transpose our data (make the rows columns and the columns rows).
+
+```{r}
+# The function t() transposes data frames or matrices and returns a matrix
+high_var_transposed <- t(high_var_subset)
+
+# Preview first six columns of newly transposed data
+head(high_var_transposed[, 1:6])
+```
+
+### Principal component analysis using prcomp()
+
+Now that our matrix is set up, we are ready to run `prcomp()`.
+
+```{r}
+pca_results <- prcomp(high_var_transposed)
+```
+
+What does `prcomp()` output look like? It's a list with named items.
+For named items, you can extract them with `$` as the output from `str()` suggests. 
+
+```{r}
+str(pca_results)
+```
+
+We'll take a look at a couple of the items in `pca_results`. 
+
+`$x` holds the principal components themselves (PC1, PC2, PC3 etc).
+The data in `$x` is a matrix where rows are samples and columns are the principal components.
+You will have as many principal components as you do samples (or really whichever dimension of your matrix is smaller, but that is almost always samples!). 
+
+```{r}
+# The principal component representation is returned in x
+pca_results$x[1:6, 1:6]
+```
+
+`$rotation` holds the loadings -- aka how much does each feature/gene contribute to each principal component?
+Loadings can be interpreted much like correlation coefficients: they can be positive or negative and can differ in magnitude. 
+
+```{r}
+# The loadings are returned in $rotation
+pca_results$rotation[1:6, 1:6]
+```
+
+### Plot PC1 and PC2
+
+Let's plot the first principal components as we have elsewhere. 
+First we will set up a data frame for plotting and join the `colData` from `vst_data`. 
+
+```{r}
+pca_df <- data.frame(pca_results$x) %>% 
+  tibble::rownames_to_column("names") %>% 
+  dplyr::inner_join(data.frame(colData(vst_data)))
+```
+
+Let's make a scatter plot of PC1 and PC2.  
+It will be nearly identical to the PCA plot we made in `02-gastric_cancer_exploratory.Rmd`. 
+
+```{r}
+ggplot(pca_df, aes(PC1, 
+                   PC2, 
+                   color = tissue)) + 
+  geom_point(size = 3) + 
+  theme_classic()
+```
+
+### Plot PC3 and PC4
+
+With some minor changes to the plot above, we can also plot the other PCs like PC3 and PC4.  
+This is an advantage we have with having the data from `prcomp()` -- we have all the PCs available to us. 
+
+```{r}
+ggplot(pca_df, aes(PC3, # Change these to PC3 and PC4
+                   PC4, 
+                   color = tissue)) + 
+  geom_point(size = 3) + 
+  theme_classic()
+```
+
+## Finding the proportion of variance explained with `prcomp()` output 
+
+It can be useful to understand the proportion of variance explained by each principal component when visualizing and interpreting the results.
+For example, if PC1 explained 96% of the variance in your data and very clearly showed a difference between sample batches you would be very concerned!
+On the other hand, if a separation of batches was apparent in a different principal component that explained a low proportion of variance and the first few PCs explained most of the variance and appeared to correspond to something like tissue type and treatment, you would be less concerned.
+
+`summary()` will report the proportion of variance explained by each principal component.
+By accessing the `importance` element with `<summary results>$importance`, we can use indexing to only look at the first 6 PCs.
+
+```{r}
+# Save summary of the PCA results
+pca_summary <- summary(pca_results)
+
+# Importance information for the first 6 PCs
+pca_importance <- pca_summary$importance[, 1:6]
+pca_importance
+```
+
+## Finding the top genes for a particular PC
+
+[Ju, Banfelder, and  Skrabanek](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf) give a lot of warnings about interpreting PC loadings in the context of gene data.
+Although in *some* circumstances it can be helpful, it often can lead to overinterpration: 
+
+> While the PC loadings can sometimes be the source of useful hints about the underlying
+natural variables of a biological process, one “needs to be more than usually circumspect
+when interpreting” the loadings (Crawley, The R Book, 2007). Part of this derives from the
+fact that PCA results are sensitive to scaling, and part of this may be that individual PCs
+may be very sensitive to noise in the data...
+
+> A good rule of thumb may be to treat any interpretations about loading as a hypothesis that needs to be validated by a completely independent means. This is definitely one of those areas where you want to be conservative.
+
+So in most cases, you may want to avoid this kind of analysis unless you have a particular hypothesis that you are looking to check.
+Even when you do look at this kind of analysis, you may want to do some further evaluations on before resting on any conclusions. 
+This is in part because this can be a precarious endeavor and definitely cannot be trusted if your data is noisy or has not been normalized properly. 
+
+For example, if you have sets of samples that use different RNA selection strategies, looking at the loadings for PC1 may be helpful. 
+If ribo-minus selected dataset has a PC1 has high gene loadings for ribosomal RNA this may indicate that RNA selection methods didn't work well for these samples. 
+
+That being said, we'll take a look at how we can see this information. 
+For example, what are the top 6 genes that contribute to PC1? 
+First, we can set up a data frame with the loading (rotation) information. 
+
+```{r}
+pc_loadings_df <- data.frame(pca_results$rotation) %>% 
+  tibble::rownames_to_column("gene_id") %>% 
+  dplyr::top_n(PC1, n = 6)
+```
+
+If you wanted to see the genes with negative loadings, you would need to use sort using the `bottom_n()` function or use the absolute values of the loadings. 
+
+Now we can plot these top results.
+
+```{r}
+ggplot(pc_loadings_df, aes(gene_id, PC1)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic() +
+  # This theme function and arguments are adjusting the labels so they are easier to read. 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+Do we prefer gene symbols instead? Our tximeta has this info for us. 
+
+```{r}
+annot_pc_loadings_df <- pc_loadings_df %>% 
+  dplyr::left_join(data.frame(rowData(vst_data)))
+
+ggplot(annot_pc_loadings_df, aes(reorder(symbol, -PC1), PC1)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic() +
+  # This theme function and arguments are adjusting the labels so they are easier to read. 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("gene symbol")
+```
+
+## Session Info
+
+Record session info for reproducibility & provenance purposes.
+
+```{r sessioninfo}
+sessionInfo()
+```
