@@ -106,11 +106,21 @@ But because our data is a specialized object (a `SummarizedExperiment`), we will
 vst_mat <- assay(vst_data)
 ```
 
+Often PCA will be more informative if we only run it on a high variance subset of the genes. 
+So we will use the top 500 genes in this example. 
+Here, `apply(., 1, var)` calculates the variance for each row/gene. 
+
+```{r}
+high_var_subset <- vst_mat %>% 
+  as.data.frame() %>% 
+  dplyr::top_n(apply(., 1, var), n = 500)
+```
+
 Let's take a look at what the these data look like. 
 Samples are columns and rows are genes. 
 
 ```{r}
-head(vst_mat)
+head(high_var_subset)
 ```
 
 `prcomp()` expects the features (in our case, genes) to be columns, but in our data and often gene matrices in general, genes are actually rows. 
@@ -118,19 +128,19 @@ So we have to transpose our data (make the rows columns and the columns rows).
 
 ```{r}
 # The function t() transposes data.frames or matrices and spits out a matrix
-vst_mat_transposed <- t(vst_mat)
+high_var_transposed <- t(high_var_subset)
 
 # Preview first six columns of newly transposed data
-head(vst_mat_transposed[, 1:6])
+head(high_var_transposed[, 1:6])
 ```
 
 ### Principal component analysis using prcomp()
 
 Now that our matrix is set up, we are ready to run `prcomp()`.
-Often you will want to use the argument `scale = TRUE` but for Variance Stabilizing Transformed data, this is not necessary. 
+Sometimes you will want to use the argument `scale = TRUE` but for Variance Stabilizing Transformed data, this is not necessary. 
 
 ```{r}
-pca_results <- prcomp(vst_mat_transposed)
+pca_results <- prcomp(high_var_transposed)
 ```
 
 What does `prcomp()` output look like? It's a list with named items.
@@ -157,8 +167,29 @@ Loadings can be interpreted much like correlation coefficients: they can be posi
 pca_results$rotation[1:6, 1:6]
 ```
 
-### Finding the top genes for a particular PC
+### Plot PC1 and PC2
 
+Let's plot the first PC components as we have elsewhere. 
+First we will set up a data frame for plotting and join the `colData` from `vst_data`. 
+
+```{r}
+pca_df <- data.frame(pca_results$x) %>% 
+  tibble::rownames_to_column("names") %>% 
+  dplyr::inner_join(data.frame(colData(vst_data)))
+```
+
+Let's make a scatter plot of this. 
+It will be nearly identical to the PCA plot we made in `02-gastric_cancer_exploratory.Rmd`. 
+
+```{r}
+ggplot(pca_df, aes(PC1, 
+                   PC2, 
+                   color = tissue)) + 
+  geom_point(size = 3) + 
+  theme_classic()
+```
+
+### Finding the top genes for a particular PC
 
 [Ju, Banfelder, and  Skrabanek](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf) give a lot of warnings about interpreting PC loadings in the context of gene data.
 Although in *some* circumstances it can be helpful, it often can lead to overinterpration: 
