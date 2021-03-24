@@ -1,0 +1,229 @@
+---
+title: "Day 2: RNA-seq Supplementary Notebook"
+author: Candace Savonen
+date: 2021-03-23
+output:   
+  html_notebook: 
+    toc: true
+    toc_float: true
+---
+
+## Introduction
+
+This notebook is designed to address questions that came up in the Introduction to RNA-seq module during CCDL training. 
+
+- [A bit on file paths and file organization](#file-paths)
+- [How to find out how much each gene contributes to a particular Principal Component and other fun things with PCA](#principal-components-analysis)
+
+
+# File Paths
+
+![The directory structure of this particular project](https://raw.githubusercontent.com/AlexsLemonade/training-modules/master/RNA-seq/diagrams/gastric_cancer_structure.png)
+
+## Directory Creation Syntax
+
+Let's say we want to create a directory to hold plots that contains subdirectories within it for separate analyses.
+We'll call the first analysis `clustering` in the example below.
+
+### `file.path()`
+
+`file.path()` adds a file path separator (`/` on Mac and Linux operating system, which is the operating system that our RStudio Server runs on) between separate folders or directory.
+Because file path separators can differ between your computer and the computer of someone who wants to use your code, we use `file.path()` instead of typing out `"plots/clustering"`.
+Each _argument_ to `file.path()` is a directory or file name.
+
+```{r}
+file.path("plots", "clustering")
+```
+
+In practice, it can make it easier to change file paths if you update an analysis in the future because you can add an argument to `file.path()`:
+
+```{r}
+file.path("plots", "clustering", "lncRNA")
+```
+
+We can assign the output of `file.path()` to an object.
+
+```{r}
+clustering_dir <- file.path("plots", "clustering")
+```
+
+If you assign the output of `file.path()` to an object at the beginning of a script or notebook, when you revisit an analysis or alter an analysis in the future you can take a quick look at the top at your script or notebook and understand where to look for the output.
+`clustering_dir` in the example above is a character vector of length 1 and behaves the same way as repeating `file.path("plots", "clustering")` anywhere you need it.
+
+# Principal Components Analysis
+
+More recommended reading on PCA: 
+
+- [Principal Components Analysis Explained Visually](https://setosa.io/ev/principal-component-analysis/)
+- [Quantitative Understanding in Biology Principal Component Analysis](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf)
+
+Instead of using DESeq2 to run our PCA and plotting for us, we can do this using `prcomp()` function and ggplot2.
+It often requires a few more steps, but ultimately gives us more information and more control over our plot. 
+
+We'll use the same `gastric-cancer` dataset we used in lecture but perform PCA outside of DESeq2 and show how to obtain gene loadings. 
+
+![](diagrams/rna-seq_6.png)
+
+These first steps are identical to what we did to set up this dataset in `02-gastric_cancer_exploratory-live.Rmd`. 
+
+### Declare directories and files
+
+```{r input-files}
+# Main data directory
+data_dir <- file.path("data", "gastric-cancer")
+
+# directory with the tximeta processed data
+txi_dir <- file.path(data_dir, "txi")
+txi_file <- file.path(txi_dir, "gastric-cancer_tximeta.RDS")
+```
+
+```{r read-rds}
+# Read in the RDS file we created in the last notebook
+gene_summarized <- readr::read_rds(txi_file)
+```
+
+### Set up DESeq2 object
+
+```{r ddset}
+ddset <- DESeqDataSet(gene_summarized,
+                      design = ~ tissue)
+```
+
+### Variance stabilizing transformation
+
+```{r vst}
+vst_data <- vst(ddset)
+```
+
+### Set up a matrix 
+
+Now, we'll briefly show you how to use built-in functions for PCA. 
+The PCA functions we are going to use can be used on any matrix.
+
+But because our data is a specialized object (a `SummarizedExperiment`), we will first extract the assay data so it is a matrix.
+
+```{r}
+vst_mat <- assay(vst_data)
+```
+
+Let's take a look at what the these data look like. 
+Samples are columns and rows are genes. 
+
+```{r}
+head(vst_mat)
+```
+
+`prcomp()` expects the features (in our case, genes) to be columns, but in our data and often gene matrices in general, genes are actually rows. 
+So we have to transpose our data (make the rows columns and the columns rows).
+
+```{r}
+# The function t() transposes data.frames or matrices and spits out a matrix
+vst_mat_transposed <- t(vst_mat)
+
+# Preview first six columns of newly transposed data
+head(vst_mat_transposed[, 1:6])
+```
+
+### Principal component analysis using prcomp()
+
+Now that our matrix is set up, we are ready to run `prcomp()`.
+Often you will want to use the argument `scale = TRUE` but for Variance Stabilizing Transformed data, this is not necessary. 
+
+```{r}
+pca_results <- prcomp(vst_mat_transposed)
+```
+
+What does `prcomp()` output look like? It's a list with named items.
+For named items, you can extract them with `$` as the output from `str()` suggests. 
+
+```{r}
+str(pca_results)
+```
+
+We'll take a look at a couple of the items in `pca_results`. 
+
+`$x` holds the principal components themselves (PC1, PC2, etc).
+
+```{r}
+# The principal component representation is returned in x
+pca_results$x[1:6, 1:6]
+```
+
+`$rotation` holds the loadings -- aka how much does each feature/gene contribute to each principal component?
+Loadings can be interpreted much like correlation coefficients: they can be positive or negative and can differ in magnitude. 
+
+```{r}
+# The loadings are returned in $rotation
+pca_results$rotation[1:6, 1:6]
+```
+
+### Finding the top genes for a particular PC
+
+[Ju, Banfelder, and  Skrabanek](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf) give a lot of warnings about interpreting PC loadings in the context of gene data.
+Although it can be helpful, they say essentially: 
+
+> A good rule of thumb may be to treat any interpretations about loading as a hypothesis that needs to be validated by a completely independent means. This is definitely one of those areas where you want to be conservative.
+
+So whatever you may find with your gene loadings, you may want to do some further evaluations on before resting on any conclusions. 
+This is in part because this can be a precarious endeavor if your data is noisy or has not been normalized properly. 
+
+That being said, we'll take a look at how we can see this information. 
+For example, what's the top 10 genes correlated to PC1? 
+First, we can set up a data frame with this information. 
+
+```{r}
+pc_loadings_df <- data.frame(pca_results$rotation) %>% 
+  tibble::rownames_to_column("gene_id") %>% 
+  dplyr::top_n(PC1, n = 10)
+```
+
+If you wanted to see the genes with negative loadings, you would need to use the absolute values sort using the `bottom_n()` function. 
+
+Now we can plot these top results.
+
+```{r}
+ggplot(pc_loadings_df, aes(gene_id, PC1)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic() +
+  theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) 
+```
+
+Do we prefer gene symbols instead? Our tximeta has this info for us. 
+
+```{r}
+annot_pc_loadings_df <- pc_loadings_df %>% 
+  dplyr::left_join(data.frame(rowData(vst_data)))
+
+
+ggplot(annot_pc_loadings_df, aes(reorder(symbol, -PC1), PC1)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic() +
+  theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) + 
+  xlab("gene symbol")
+```
+
+## Finding proportion variance with prcomp() output 
+
+It can be useful to understand the proportion of variance explained by each principal component when visualizing and interpreting the results.
+For example, if PC1 explained 96% of the variance in your data and very clearly showed a difference between sample batches you would be very concerned!
+On the other hand, if a separation of batches was apparent in a different principal component that explained a low proportion of variance and the first few PCs explained most of the variance and appeared to correspond to something like tissue type and treatment, you would be less concerned.
+
+`summary()` will report the proportion of variance explained by each principal component.
+By accessing the `importance` element with `<summary results>$importance`, we can use indexing to only look at the first 10 PCs.
+
+```{r pca_summary}
+# Save summary of the PCA results
+pca_summary <- summary(pca_results)
+
+# Importance information for the first 10 PCs
+pca_importance <- pca_summary$importance[, 1:6]
+pca_importance
+```
+
+## Session Info
+
+Record session info for reproducibility & provenance purposes.
+
+```{r sessioninfo}
+sessionInfo()
+```
