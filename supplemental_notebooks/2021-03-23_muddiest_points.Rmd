@@ -15,10 +15,20 @@ This notebook is designed to address questions that came up in the Introduction 
 - [A bit on file paths and file organization](#file-paths)
 - [How to find out how much each gene contributes to a particular Principal Component and other fun things with PCA](#principal-components-analysis)
 
+### How to use this notebook: 
+
+1) Click the `download` button to put this Rmd on your computer.   
+2) Navigate to RStudio server.  
+3) In your `File` pane, go to `training-modules/RNA-seq`.     
+4) Click the `Upload` button in your `File` pane.   
+5) Click `Choose file` and find this file.   (`2021-03-23-_muddiest_points.Rmd`) on your computer.   
+6) Click `OK`.   
+
+Now you can open up this file and run it on your computer. 
 
 # File Paths
 
-![The directory structure of this particular project](https://raw.githubusercontent.com/AlexsLemonade/training-modules/master/RNA-seq/diagrams/gastric_cancer_structure.png)
+![The directory structure of this particular project](https://raw.githubusercontent.com/AlexsLemonade/training-modules/2021-march/RNA-seq/diagrams/gastric_cancer_structure.png)
 
 ## Directory Creation Syntax
 
