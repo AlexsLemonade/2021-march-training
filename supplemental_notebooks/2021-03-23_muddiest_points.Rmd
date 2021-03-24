@@ -159,13 +159,25 @@ pca_results$rotation[1:6, 1:6]
 
 ### Finding the top genes for a particular PC
 
+
 [Ju, Banfelder, and  Skrabanek](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf) give a lot of warnings about interpreting PC loadings in the context of gene data.
-Although it can be helpful, they say essentially: 
+Although in *some* circumstances it can be helpful, it often can lead to overinterpration: 
+
+> While the PC loadings can sometimes be the source of useful hints about the underlying
+natural variables of a biological process, one “needs to be more than usually circumspect
+when interpreting” the loadings (Crawley, The R Book, 2007). Part of this derives from the
+fact that PCA results are sensitive to scaling, and part of this may be that individual PCs
+may be very sensitive to noise in the data...
 
 > A good rule of thumb may be to treat any interpretations about loading as a hypothesis that needs to be validated by a completely independent means. This is definitely one of those areas where you want to be conservative.
 
-So whatever you may find with your gene loadings, you may want to do some further evaluations on before resting on any conclusions. 
-This is in part because this can be a precarious endeavor if your data is noisy or has not been normalized properly. 
+So in most cases, you may want to avoid this kind of analysis unless you have a particular hypothesis that you are looking to check.
+Even when you do look at this kind of analysis, you may want to do some further evaluations on before resting on any conclusions. 
+This is in part because this can be a precarious endeavor and definitely cannot be trusted if your data is noisy or has not been normalized properly. 
+
+For example, if you sets of samples that use different RNA selection strategies, looking at the loadings for PC1 may be helpful. 
+If in a poly-A selected sample there high loadings for genes that are not poly-adenylated (e.g., a bunch of histones) or if a ribo-minus selected sample
+has ribosomal RNA show up as the top hits this may indicate that RNA selection methods didn't thoroughly process. 
 
 That being said, we'll take a look at how we can see this information. 
 For example, what's the top 10 genes correlated to PC1? 
