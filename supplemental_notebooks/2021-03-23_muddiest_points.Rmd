@@ -100,7 +100,7 @@ vst_data <- vst(ddset)
 Now, we'll briefly show you how to use built-in functions for PCA. 
 The PCA functions we are going to use can be used on any matrix.
 
-But because our data is a specialized object (a `SummarizedExperiment`), we will first extract the assay data so it is a matrix.
+But because our data is a specialized object (a`DESeqTransform`, which is structured similarly to the `SummarizedExperiment` we have used before), we will first extract the assay data as a matrix.
 
 ```{r}
 vst_mat <- assay(vst_data)
@@ -123,11 +123,11 @@ Samples are columns and rows are genes.
 head(high_var_subset)
 ```
 
-`prcomp()` expects the features (in our case, genes) to be columns, but in our data and often gene matrices in general, genes are actually rows. 
+`prcomp()` expects the features (in our case, genes) to be columns, but in our data and often gene expression matrices in general, genes are actually rows. 
 So we have to transpose our data (make the rows columns and the columns rows).
 
 ```{r}
-# The function t() transposes data.frames or matrices and spits out a matrix
+# The function t() transposes data.frames or matrices and returns a matrix
 high_var_transposed <- t(high_var_subset)
 
 # Preview first six columns of newly transposed data
@@ -152,7 +152,9 @@ str(pca_results)
 
 We'll take a look at a couple of the items in `pca_results`. 
 
-`$x` holds the principal components themselves (PC1, PC2, etc).
+`$x` holds the principal components themselves (PC1, PC2, PC3 etc).
+The data in `$x` is a matrix where rows are samples and columns are the components.  
+You will have as many components as you do samples. 
 
 ```{r}
 # The principal component representation is returned in x
@@ -178,7 +180,7 @@ pca_df <- data.frame(pca_results$x) %>%
   dplyr::inner_join(data.frame(colData(vst_data)))
 ```
 
-Let's make a scatter plot of this. 
+Let's make a scatter plot of PC1 and PC2.  
 It will be nearly identical to the PCA plot we made in `02-gastric_cancer_exploratory.Rmd`. 
 
 ```{r}
@@ -189,7 +191,36 @@ ggplot(pca_df, aes(PC1,
   theme_classic()
 ```
 
-### Finding the top genes for a particular PC
+With some minor changes to the plot above, we can also plot the other PCs like PC3 and PC4.  
+This is an advantage we have with having the data from `prcomp()` -- we have all the PCs available to us. 
+
+```{r}
+ggplot(pca_df, aes(PC3, # Change these to PC3 and PC4
+                   PC4, 
+                   color = tissue)) + 
+  geom_point(size = 3) + 
+  theme_classic()
+```
+
+## Finding proportion variance with prcomp() output 
+
+It can be useful to understand the proportion of variance explained by each principal component when visualizing and interpreting the results.
+For example, if PC1 explained 96% of the variance in your data and very clearly showed a difference between sample batches you would be very concerned!
+On the other hand, if a separation of batches was apparent in a different principal component that explained a low proportion of variance and the first few PCs explained most of the variance and appeared to correspond to something like tissue type and treatment, you would be less concerned.
+
+`summary()` will report the proportion of variance explained by each principal component.
+By accessing the `importance` element with `<summary results>$importance`, we can use indexing to only look at the first 6 PCs.
+
+```{r}
+# Save summary of the PCA results
+pca_summary <- summary(pca_results)
+
+# Importance information for the first 6 PCs
+pca_importance <- pca_summary$importance[, 1:6]
+pca_importance
+```
+
+## Finding the top genes for a particular PC
 
 [Ju, Banfelder, and  Skrabanek](https://physiology.med.cornell.edu/people/banfelder/qbio/lecture_notes/3.4_Principal_component_analysis.pdf) give a lot of warnings about interpreting PC loadings in the context of gene data.
 Although in *some* circumstances it can be helpful, it often can lead to overinterpration: 
@@ -211,13 +242,13 @@ If in a poly-A selected sample there high loadings for genes that are not poly-a
 has ribosomal RNA show up as the top hits this may indicate that RNA selection methods didn't thoroughly process. 
 
 That being said, we'll take a look at how we can see this information. 
-For example, what's the top 10 genes correlated to PC1? 
+For example, what's the top 6 genes correlated to PC1? 
 First, we can set up a data frame with this information. 
 
 ```{r}
 pc_loadings_df <- data.frame(pca_results$rotation) %>% 
   tibble::rownames_to_column("gene_id") %>% 
-  dplyr::top_n(PC1, n = 10)
+  dplyr::top_n(PC1, n = 6)
 ```
 
 If you wanted to see the genes with negative loadings, you would need to use the absolute values sort using the `bottom_n()` function. 
@@ -228,6 +259,7 @@ Now we can plot these top results.
 ggplot(pc_loadings_df, aes(gene_id, PC1)) + 
   geom_bar(stat = "identity") + 
   theme_classic() +
+  # This theme function and arguments are adjusting the labels so they are easier to read. 
   theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) 
 ```
 
@@ -241,26 +273,9 @@ annot_pc_loadings_df <- pc_loadings_df %>%
 ggplot(annot_pc_loadings_df, aes(reorder(symbol, -PC1), PC1)) + 
   geom_bar(stat = "identity") + 
   theme_classic() +
+  # This theme function and arguments are adjusting the labels so they are easier to read. 
   theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) + 
   xlab("gene symbol")
-```
-
-## Finding proportion variance with prcomp() output 
-
-It can be useful to understand the proportion of variance explained by each principal component when visualizing and interpreting the results.
-For example, if PC1 explained 96% of the variance in your data and very clearly showed a difference between sample batches you would be very concerned!
-On the other hand, if a separation of batches was apparent in a different principal component that explained a low proportion of variance and the first few PCs explained most of the variance and appeared to correspond to something like tissue type and treatment, you would be less concerned.
-
-`summary()` will report the proportion of variance explained by each principal component.
-By accessing the `importance` element with `<summary results>$importance`, we can use indexing to only look at the first 10 PCs.
-
-```{r pca_summary}
-# Save summary of the PCA results
-pca_summary <- summary(pca_results)
-
-# Importance information for the first 10 PCs
-pca_importance <- pca_summary$importance[, 1:6]
-pca_importance
 ```
 
 ## Session Info
