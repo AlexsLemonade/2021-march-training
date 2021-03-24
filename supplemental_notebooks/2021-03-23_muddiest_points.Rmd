@@ -17,7 +17,7 @@ This notebook is designed to address questions that came up in the Introduction 
 
 ### How to use this notebook: 
 
-1) Click the `download` button to put this Rmd (`2021-03-23-_muddiest_points.Rmd`) on your computer.   
+1) Click the `Code` button in the upper right of this page and choose `Download Rmd` to save this notebook (`2021-03-23_muddiest_points.Rmd`) to your computer.   
 2) Navigate to RStudio server.  
 3) In your `File` pane, go to `training-modules/RNA-seq`.     
 4) Click the `Upload` button in your `File` pane.   
@@ -76,6 +76,13 @@ We'll use the same `gastric-cancer` dataset we used in lecture but perform PCA o
 
 These first steps are identical to what we did to set up this dataset in `02-gastric_cancer_exploratory-live.Rmd`. 
 
+### Load libraries 
+
+```{r}
+library(DESeq2)
+library(ggplot2)
+```
+
 ### Declare directories and files
 
 ```{r input-files}
@@ -116,8 +123,8 @@ But because our data is a specialized object (a`DESeqTransform`, which is struct
 vst_mat <- assay(vst_data)
 ```
 
-Often PCA will be more informative if we only run it on a high variance subset of the genes. 
-So we will use the top 500 genes in this example. 
+Often PCA will be as informative (and faster to calculate) if we only run it on a high variance subset of the genes. 
+Following the default behavior of the `DESeq2` function `plotPCA()` that we used previously, we will use the top 500 genes in this example. 
 Here, `apply(., 1, var)` calculates the variance for each row/gene. 
 
 ```{r}
@@ -133,11 +140,11 @@ Samples are columns and rows are genes.
 head(high_var_subset)
 ```
 
-`prcomp()` expects the features (in our case, genes) to be columns, but in our data and often gene expression matrices in general, genes are actually rows. 
+`prcomp()` expects the features (in our case, genes) to be columns and the observations (samples) to be rows, but in our data and often gene expression matrices in general, genes are actually rows. 
 So we have to transpose our data (make the rows columns and the columns rows).
 
 ```{r}
-# The function t() transposes data.frames or matrices and returns a matrix
+# The function t() transposes data frames or matrices and returns a matrix
 high_var_transposed <- t(high_var_subset)
 
 # Preview first six columns of newly transposed data
@@ -147,7 +154,6 @@ head(high_var_transposed[, 1:6])
 ### Principal component analysis using prcomp()
 
 Now that our matrix is set up, we are ready to run `prcomp()`.
-Sometimes you will want to use the argument `scale = TRUE` but for Variance Stabilizing Transformed data, this is not necessary. 
 
 ```{r}
 pca_results <- prcomp(high_var_transposed)
@@ -163,8 +169,8 @@ str(pca_results)
 We'll take a look at a couple of the items in `pca_results`. 
 
 `$x` holds the principal components themselves (PC1, PC2, PC3 etc).
-The data in `$x` is a matrix where rows are samples and columns are the components.  
-You will have as many components as you do samples. 
+The data in `$x` is a matrix where rows are samples and columns are the principal components.
+You will have as many principal components as you do samples (or really whichever dimension of your matrix is smaller, but that is almost always samples!). 
 
 ```{r}
 # The principal component representation is returned in x
@@ -181,7 +187,7 @@ pca_results$rotation[1:6, 1:6]
 
 ### Plot PC1 and PC2
 
-Let's plot the first PC components as we have elsewhere. 
+Let's plot the first principal components as we have elsewhere. 
 First we will set up a data frame for plotting and join the `colData` from `vst_data`. 
 
 ```{r}
@@ -201,6 +207,8 @@ ggplot(pca_df, aes(PC1,
   theme_classic()
 ```
 
+### Plot PC3 and PC4
+
 With some minor changes to the plot above, we can also plot the other PCs like PC3 and PC4.  
 This is an advantage we have with having the data from `prcomp()` -- we have all the PCs available to us. 
 
@@ -212,7 +220,7 @@ ggplot(pca_df, aes(PC3, # Change these to PC3 and PC4
   theme_classic()
 ```
 
-## Finding proportion variance with prcomp() output 
+## Finding the proportion of variance explained with `prcomp()` output 
 
 It can be useful to understand the proportion of variance explained by each principal component when visualizing and interpreting the results.
 For example, if PC1 explained 96% of the variance in your data and very clearly showed a difference between sample batches you would be very concerned!
@@ -252,8 +260,8 @@ If in a poly-A selected sample there high loadings for genes that are not poly-a
 has ribosomal RNA show up as the top hits this may indicate that RNA selection methods didn't thoroughly process. 
 
 That being said, we'll take a look at how we can see this information. 
-For example, what's the top 6 genes correlated to PC1? 
-First, we can set up a data frame with this information. 
+For example, what are the top 6 genes that contribute to PC1? 
+First, we can set up a data frame with the loading (rotation) information. 
 
 ```{r}
 pc_loadings_df <- data.frame(pca_results$rotation) %>% 
@@ -261,7 +269,7 @@ pc_loadings_df <- data.frame(pca_results$rotation) %>%
   dplyr::top_n(PC1, n = 6)
 ```
 
-If you wanted to see the genes with negative loadings, you would need to use the absolute values sort using the `bottom_n()` function. 
+If you wanted to see the genes with negative loadings, you would need to use sort using the `bottom_n()` function or use the absolute values of the loadings. 
 
 Now we can plot these top results.
 
@@ -270,7 +278,7 @@ ggplot(pc_loadings_df, aes(gene_id, PC1)) +
   geom_bar(stat = "identity") + 
   theme_classic() +
   # This theme function and arguments are adjusting the labels so they are easier to read. 
-  theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 ```
 
 Do we prefer gene symbols instead? Our tximeta has this info for us. 
@@ -284,7 +292,7 @@ ggplot(annot_pc_loadings_df, aes(reorder(symbol, -PC1), PC1)) +
   geom_bar(stat = "identity") + 
   theme_classic() +
   # This theme function and arguments are adjusting the labels so they are easier to read. 
-  theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   xlab("gene symbol")
 ```
 
