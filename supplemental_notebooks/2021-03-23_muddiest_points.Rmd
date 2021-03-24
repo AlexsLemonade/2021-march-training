@@ -17,14 +17,14 @@ This notebook is designed to address questions that came up in the Introduction 
 
 ### How to use this notebook: 
 
-1) Click the `download` button to put this Rmd on your computer.   
+1) Click the `download` button to put this Rmd (`2021-03-23-_muddiest_points.Rmd`) on your computer.   
 2) Navigate to RStudio server.  
 3) In your `File` pane, go to `training-modules/RNA-seq`.     
 4) Click the `Upload` button in your `File` pane.   
-5) Click `Choose file` and find this file.   (`2021-03-23-_muddiest_points.Rmd`) on your computer.   
+5) Click `Choose file` and find this `Rmd` file on your computer.   
 6) Click `OK`.   
 
-Now you can open up this file and run it on your computer. 
+Now you can open up this file and run it on the Server. 
 
 # File Paths
 
