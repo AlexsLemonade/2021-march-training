@@ -255,9 +255,8 @@ So in most cases, you may want to avoid this kind of analysis unless you have a 
 Even when you do look at this kind of analysis, you may want to do some further evaluations on before resting on any conclusions. 
 This is in part because this can be a precarious endeavor and definitely cannot be trusted if your data is noisy or has not been normalized properly. 
 
-For example, if you sets of samples that use different RNA selection strategies, looking at the loadings for PC1 may be helpful. 
-If in a poly-A selected sample there high loadings for genes that are not poly-adenylated (e.g., a bunch of histones) or if a ribo-minus selected sample
-has ribosomal RNA show up as the top hits this may indicate that RNA selection methods didn't thoroughly process. 
+For example, if you have sets of samples that use different RNA selection strategies, looking at the loadings for PC1 may be helpful. 
+If ribo-minus selected dataset has a PC1 has high gene loadings for ribosomal RNA this may indicate that RNA selection methods didn't work well for these samples. 
 
 That being said, we'll take a look at how we can see this information. 
 For example, what are the top 6 genes that contribute to PC1? 
@@ -286,7 +285,6 @@ Do we prefer gene symbols instead? Our tximeta has this info for us.
 ```{r}
 annot_pc_loadings_df <- pc_loadings_df %>% 
   dplyr::left_join(data.frame(rowData(vst_data)))
-
 
 ggplot(annot_pc_loadings_df, aes(reorder(symbol, -PC1), PC1)) + 
   geom_bar(stat = "identity") + 
