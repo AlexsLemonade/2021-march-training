@@ -147,130 +147,99 @@ Let's look at the _current format_ for these leading edge genes.
 gsea_results_df %>%
   dplyr::pull(core_enrichment)
 ```
+
 This could be formatted in a way that is more helpful!
 And we probably want to split this information up by whether a pathway has a _positive_ or _negative_ Normalized Enrichment Score (NES).
 
+#### Visualizing Jaccard Index values between leading edge subsets
+
+Let's look at leading edge subsets for pathways with significant negative NES values.
+There are many more significant negative pathways than positive pathways, so comparing the leading edge subsets might be more interesting.
+
+First, let's use `tidyr::separate_rows()` to get a data frame where one column is the pathway and one column is gene symbols.
+
 ```{r}
-# Pathways up in amplified cell lines
-positive_nes_df <- gsea_results_df %>%
-  # Only rows that have positive NES
-  dplyr::filter(NES > 0) %>%
+# Pathways down in amplified cell lines
+neg_gene_pathway_df <- gsea_results_df %>%
+  # Only rows that have negative NES
+  dplyr::filter(NES < 0) %>%
   # Selected columns: the pathway name or ID, NES, adj p-values, and 
   # leading edge genes
-  dplyr::select(ID, NES, p.adjust, core_enrichment)
+  dplyr::select(ID, core_enrichment) %>%
+  # Long format for gene-pathway pairs
+  tidyr::separate_rows(core_enrichment, sep = "/") %>%
+  # Rename the columns
+  dplyr::rename(pathway_id = ID,
+                gene = core_enrichment)
+
+neg_gene_pathway_df
 ```
 
-We can split up the different genes using a function from a tidyverse package called `stringr` because they are always separated with a `/`. 
+We can use `split` to turn this data frame into a list where each element of the list is a vector of gene symbols in the leading edge subset and is named for the pathway.
 
 ```{r}
-positive_leading_list <- positive_nes_df %>%
-  # Get the core enrichment column as a vector
-  dplyr::pull(core_enrichment) %>%
-  # Split up the core enrichment vector into a list of vectors
-  # The list will have a vector of individual genes per pathway
-  stringr::str_split(., pattern = "/") %>%
-  # Set the names of the list using the pathway ID column from the data frame
-  # we were originally working with
-  purrr::set_names(positive_nes_df %>% dplyr::pull(ID))
+neg_leading_list <- split(neg_gene_pathway_df$gene, 
+                          neg_gene_pathway_df$pathway_id)
 ```
 
-What is `positive_leading_list`?
+The [Jaccard index](https://en.wikipedia.org/wiki/Jaccard_index) is a measure of similarity between two sets.
+The values are bounded between 0 and 1, where 0 indicates no overlap and 1 indicates perfect overlap.
+We can write a custom function to calculate the Jaccard index for two character vectors.
 
 ```{r}
-class(positive_leading_list)
+calculate_jaccard <- function(x, y) {
+  length(intersect(x, y)) / length(union(x, y))
+}
 ```
 
+Let's calculate the Jaccard index between each pair of pathways' leading edge subsets.
+
 ```{r}
-length(positive_leading_list)
+# Get each pair of pathways
+neg_leading_jaccard <- combn(neg_leading_list, 2, simplify = FALSE) %>%
+  # Calculate the Jaccard index between the two vectors of leading edge subsets
+  purrr::map(~ calculate_jaccard(.x[[1]], .x[[2]])) %>%
+  # Return a vector, not a list
+  purrr::flatten_dbl()
 ```
 
+Make into a data frame for plotting with `geom_tile()`.
+
 ```{r}
-names(positive_leading_list)
+# We'll want to add back in the names of the pathways!
+neg_jaccard_df <- data.frame(t(combn(names(neg_leading_list), 2))) %>%  # Get the combination of pathway names
+  dplyr::mutate(jaccard_index = neg_leading_jaccard,  # Add jaccard index
+                X1 = stringr::str_replace_all(X1, "_", " "),  # Remove underscores from pathway 1 names
+                X2 = stringr::str_replace_all(X2, "_", " ")) # Remove underscores from pathway 2 names
+
+neg_jaccard_df
 ```
 
-A list with three elements, one for each pathway.
-
-#### Visualizing genes' membership in leading edge subsets 
-
-Let's say we wanted to visualize if the same genes were in leading edge subsets for different pathways that came up as significant.
-We can get a long format data frame for plotting with `ggplot2` instead of this list.
+Now we'll plot the pairwise Jaccard index values using `ggplot2`.
 
 ```{r}
-pos_gene_pathway_df <- positive_leading_list %>%
-  # Turn this into a data frame of pathway ID - gene pairs
-  # This is long format
-  reshape2::melt() %>%
-  # Give the long format data frame some sensible names
-  dplyr::rename(pathway_id = L1,
-                gene = value)
-
-# Take a peek
-head(pos_gene_pathway_df)
-```
-
-Okay, let's make a heatmap of sorts that will tell us whether or not the same genes show up over and over again.
-We can us `ggplot2` and specifically `geom_tile()` to do this, where we fill in the cells or tiles when a gene is in the pathway.
-
-```{r}
-ggplot(pos_gene_pathway_df, 
-       aes(pathway_id, gene)) +
+neg_jaccard_df %>%
+  # Make a tile plot again, but now use the Jaccard index values for the 
+  # fills
+  ggplot(aes(x = X1,
+             y = X2,
+             fill = jaccard_index)) +
   geom_tile() +
-  scale_fill_identity() +
-  theme_bw()
-```
-This is in alphabetical order and kind of ugly (!) so let's see if we can do better.
-For this specific plot, maybe we don't want to include genes that only show up in one pathway to keep things cleaner.
-
-First, let's find out how many pathways genes show up in so we can order our plot using this information & drop out genes that are only in one pathway.
-
-```{r}
-# table() will count the number of times a gene shows up in the gene column
-# which will correspond to the number of pathways it is in
-gene_frequency <- sort(table(pos_gene_pathway_df$gene), decreasing = TRUE)
-head(gene_frequency)
-```
-
-We want the genes that show up in more than one pathway to be plotted _only_ and for genes in all three pathways to be plotted _first_, followed by genes that show up in 2 pathways.
-We've already sorted such that the genes in 3 pathways are at the beginning of the list, now we'll filter out the 
-We need to snag the _names_ of the `gene_frequency` vector here, because that's where the gene symbols are.
-
-```{r}
-multiple_pathway_genes <- names(gene_frequency)[gene_frequency > 1]
-```
-
-Let's create a data frame specifically for plotting that removes the genes that are only in a single pathway.
-
-```{r}
-plotting_df <- pos_gene_pathway_df %>%
-  # Include only genes that are in multiple pathways
-  dplyr::filter(gene %in% multiple_pathway_genes) %>%
-  # Ensures that when we plot the genes in three pathways will come first
-  # And also make the pathway names a little "prettier" for plotting by removing
-  # underscores
-  dplyr::mutate(gene = factor(gene, levels = multiple_pathway_genes),
-                pathway_id = stringr::str_replace_all(pathway_id, "_", " "))
-```
-
-Okay, let's make a heatmap/tile plot where the pathways are rows and the genes are columns.
-
-```{r}
-ggplot(plotting_df, 
-       aes(gene, pathway_id)) +
-  # Use burgundy to indicate pathway leading edge membership
-  geom_tile(fill = "#800020") +
-  scale_fill_identity() +
-  # Another built-in theme
-  theme_linedraw() +
-  labs(y = "pathway",
-       title = "Positive NES Leading Edge",
-       subtitle = "Genes in Multiple Pathways") +
-  # Adjust the angle of the x axis labels (genes) and make a bit smaller
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5,
-                                   size = 6),
+  # White-dark green gradient, bounded at 0 and 1 like the metric we are using
+  scale_fill_gradientn(
+    colors = c("#FFFFFF", "#006400"),
+    limits = c(0, 1),
+    name = "Jaccard index"  # What to call it in the legend
+  ) +
+  theme_classic() +
+  # Remove the x and y axis labels
+  labs(x = NULL, 
+       y = NULL,
+       # Add a title that's broken up over two lines
+       title = "Negative NES Pathway\nLeading Edge Jaccard Index") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.9),
         # Center the plot title and make it bold
-        plot.title = element_text(face = "bold", hjust = 0.5),
-        # Center the plot subtitle
-        plot.subtitle = element_text(hjust = 0.5))
+        plot.title = element_text(face = "bold", hjust = 0.5))
 ```
 
 #### Heatmap of transformed RNA-seq data for leading edge genes
@@ -289,9 +258,16 @@ We used the `filtered_dge_df` data frame of statistics for our GSEA step itself 
 So we can use that to grab the Ensembl gene IDs that are in the leading edge for the Hallmark E2F Targets pathway.
 
 ```{r}
+# Get the gene symbols in the leading edge for E2F target
+e2f_gene_symbols <- gsea_results_df %>%
+  dplyr::select(ID, core_enrichment) %>%
+  dplyr::filter(ID == "HALLMARK_E2F_TARGETS") %>%
+  tidyr::separate_rows(core_enrichment, sep = "/") %>%
+  dplyr::pull(core_enrichment)
+
 e2f_ensg_ids <- filtered_dge_df %>%
   # Rows with gene symbols that are in the leading edge for E2F targets
-  dplyr::filter(gene_symbol %in% positive_leading_list$HALLMARK_E2F_TARGETS) %>%
+  dplyr::filter(gene_symbol %in% e2f_gene_symbols) %>%
   # Get a vector of Ensembl gene IDs in that row where the names of the vector
   # are the corresponding gene symbol
   dplyr::pull(gene_id, name = gene_symbol)
@@ -345,7 +321,7 @@ So let's add a _row annotation_ that includes the log2 fold change information b
 ```{r}
 row_annotation_df <- filtered_dge_df %>%
   # Rows with gene symbols that are in the leading edge for E2F targets
-  dplyr::filter(gene_symbol %in% positive_leading_list$HALLMARK_E2F_TARGETS) %>%
+  dplyr::filter(gene_symbol %in% e2f_gene_symbols) %>%
   dplyr::select(gene_symbol, log2FoldChange) %>%
   tibble::column_to_rownames("gene_symbol")
 
@@ -356,7 +332,14 @@ row_annotation <- rowAnnotation(
 )
 ```
 
-Now we're ready to make our heatmap!
+We can do something where we split our heatmap by a categorical variable.
+Here we'd use status, but let's double check that our samples are in the same order in `sample_annotation_df` and the expression matrix.
+
+```{r}
+all.equal(colnames(e2f_mat), rownames(sample_annotation_df))
+```
+
+Okay, let's make our heatmap!
 
 ```{r}
 ComplexHeatmap::Heatmap(e2f_mat,
@@ -364,6 +347,7 @@ ComplexHeatmap::Heatmap(e2f_mat,
                         top_annotation = column_annotation,
                         # Add annotation to the rows
                         right_annotation = row_annotation,
+                        column_split = sample_annotation_df$status,
                         # This will be used as the label for the color bar
                         # of the cells of the heatmap itself
                         name = "z-score",
