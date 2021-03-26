@@ -1,0 +1,381 @@
+---
+title: "Day 4: Pathway Analysis Supplemental Notebook"
+author: Jaclyn Taroni
+date: 2021-03-26
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+
+## Introduction
+
+This notebook is designed to cover questions that came up during the pathway analysis module.
+
+### How to use this notebook
+
+1. Click the `Code` button in the upper right of this page and choose `Download Rmd` to save this notebook (`2021-03-26_muddiest_points.Rmd`) to your computer.   
+2. Navigate to RStudio server.  
+3. In your `File` pane, go to `training-modules/pathway-analysis`.     
+4. Click the `Upload` button in your `File` pane.   
+5. Click `Choose file` and find this `Rmd` file on your computer.   
+6. Click `OK`.
+
+## GSEA Visualization
+
+We'll cover some alternate ways to visualize information returned by `GSEA()`.
+
+### Required libraries
+
+```{r libraries}
+# Package to run GSEA
+library(clusterProfiler)
+# Package that contains the MSigDB gene sets in tidy format
+library(msigdbr)
+# Package for creating a heatmap
+library(ComplexHeatmap)
+# VST
+library(DESeq2)
+# Pipes
+library(magrittr)
+# Tile plot
+library(ggplot2)
+```
+
+### Read in differential expression results & expression data
+
+#### Differential expression prep
+
+For this demonstration, we are again going to use the statistics (log2 fold change, specifically) from the neuroblastoma cell line dataset where we compared _MYCN_ amplified to non-amplified cell lines.
+
+```{r read_in_dge}
+# Where the DGE results are stored
+dge_results_dir <- file.path("..", "RNA-seq", "results", "NB-cell")
+
+# DGE results
+dge_results_file <- file.path(
+  dge_results_dir,
+  "NB-cell_DESeq_amplified_v_nonamplified_results.tsv"
+)
+
+# Read in the data
+dge_results_df <- readr::read_tsv(dge_results_file)
+```
+
+Filter out duplicates by selecting instances of gene symbol with the highest absolute log2 fold change value.
+
+```{r drop_dups}
+filtered_dge_df <- dge_results_df %>%
+  # Sort so that the highest absolute values of the log2 fold change are at the
+  # top
+  dplyr::arrange(dplyr::desc(abs(log2FoldChange))) %>%
+  # Filter out the duplicated rows using `dplyr::distinct()`
+  dplyr::distinct(gene_symbol, .keep_all = TRUE)
+```
+
+Get the sorted vector we need to supply to GSEA function.
+
+```{r lfc_vector}
+# Vector of log2 fold changes
+lfc_vector <- filtered_dge_df %>%
+  # Extract a vector of `log2FoldChange` named by `gene_symbol`
+  dplyr::pull(log2FoldChange, name = gene_symbol)
+
+# Sort named vector in decreasing order
+lfc_vector <- sort(lfc_vector, decreasing = TRUE)
+```
+
+#### Transformed RNA-seq data
+
+We'll use the `SummarizedExperiment` for the NB cell line experiment (e.g., output of `tximeta`) to create a `DESeqDataSet` we can transform.
+We're going to use the transformed data to make a heatmap.
+
+```{r input-files}
+# directory with the tximeta processed data
+txi_dir <- file.path("..", "RNA-seq", "data", "NB-cell", "txi")
+txi_file <- file.path(txi_dir, "NB-cell_tximeta.RDS")
+txi <- readr::read_rds(txi_file)
+```
+
+Make a `DESeqDataSet` and perform variance stabilizing transformation ahead of our visualization.
+
+```{r}
+ddset <- DESeqDataSet(txi,
+                      design = ~ 1)
+vst_data <- vst(ddset, blind = TRUE)
+```
+
+### Perform GSEA
+
+#### Gene sets
+
+We'll use Hallmark gene sets like we did during instruction.
+
+```{r}
+hs_hallmarks_df <- msigdbr(species = "Homo sapiens",
+                           category = "H")
+```
+
+#### Run GSEA
+
+```{r}
+gsea_results <- GSEA(geneList = lfc_vector,  # ordered ranked gene list
+                     minGSSize = 25,  # minimum gene set size
+                     maxGSSize = 500,  # maximum gene set set
+                     pvalueCutoff = 0.05,
+                     pAdjustMethod = "BH",  # correction for multiple hypothesis testing
+                     TERM2GENE = dplyr::select(hs_hallmarks_df,
+                                               gs_name,
+                                               gene_symbol))
+```
+Let's get the `result` slot into a data frame so we can more easily use `tidyverse` tools on it.
+
+```{r}
+gsea_results_df <- data.frame(gsea_results@result)
+```
+
+The `core_enrichment` column contains the genes that are in the leading edge subset of genes for that pathway.
+These are the genes that "contribute most to the enrichment result." ([GSEA docs](https://www.gsea-msigdb.org/gsea/doc/GSEAUserGuideTEXT.htm#_Gene_Set_Details_1))
+
+![](diagrams/subramanian_fig1.jpg)
+
+**Figure 1. [Subramanian _et al._ (2005)](https://doi.org/10.1073/pnas.0506580102).**
+
+Let's look at the _current format_ for these leading edge genes.
+
+```{r}
+gsea_results_df %>%
+  dplyr::pull(core_enrichment)
+```
+This could be formatted in a way that is more helpful!
+And we probably want to split this information up by whether a pathway has a _positive_ or _negative_ Normalized Enrichment Score (NES).
+
+```{r}
+# Pathways up in amplified cell lines
+positive_nes_df <- gsea_results_df %>%
+  # Only rows that have positive NES
+  dplyr::filter(NES > 0) %>%
+  # Selected columns: the pathway name or ID, NES, adj p-values, and 
+  # leading edge genes
+  dplyr::select(ID, NES, p.adjust, core_enrichment)
+```
+
+We can split up the different genes using a function from a tidyverse package called `stringr` because they are always separated with a `/`. 
+
+```{r}
+positive_leading_list <- positive_nes_df %>%
+  # Get the core enrichment column as a vector
+  dplyr::pull(core_enrichment) %>%
+  # Split up the core enrichment vector into a list of vectors
+  # The list will have a vector of individual genes per pathway
+  stringr::str_split(., pattern = "/") %>%
+  # Set the names of the list using the pathway ID column from the data frame
+  # we were originally working with
+  purrr::set_names(positive_nes_df %>% dplyr::pull(ID))
+```
+
+What is `positive_leading_list`?
+
+```{r}
+class(positive_leading_list)
+```
+
+```{r}
+length(positive_leading_list)
+```
+
+```{r}
+names(positive_leading_list)
+```
+
+A list with three elements, one for each pathway.
+
+#### Visualizing genes' membership in leading edge subsets 
+
+Let's say we wanted to visualize if the same genes were in leading edge subsets for different pathways that came up as significant.
+We can get a long format data frame for plotting with `ggplot2` instead of this list.
+
+```{r}
+pos_gene_pathway_df <- positive_leading_list %>%
+  # Turn this into a data frame of pathway ID - gene pairs
+  # This is long format
+  reshape2::melt() %>%
+  # Give the long format data frame some sensible names
+  dplyr::rename(pathway_id = L1,
+                gene = value)
+
+# Take a peek
+head(pos_gene_pathway_df)
+```
+
+Okay, let's make a heatmap of sorts that will tell us whether or not the same genes show up over and over again.
+We can us `ggplot2` and specifically `geom_tile()` to do this, where we fill in the cells or tiles when a gene is in the pathway.
+
+```{r}
+ggplot(pos_gene_pathway_df, 
+       aes(pathway_id, gene)) +
+  geom_tile() +
+  scale_fill_identity() +
+  theme_bw()
+```
+This is in alphabetical order and kind of ugly (!) so let's see if we can do better.
+For this specific plot, maybe we don't want to include genes that only show up in one pathway to keep things cleaner.
+
+First, let's find out how many pathways genes show up in so we can order our plot using this information & drop out genes that are only in one pathway.
+
+```{r}
+# table() will count the number of times a gene shows up in the gene column
+# which will correspond to the number of pathways it is in
+gene_frequency <- sort(table(pos_gene_pathway_df$gene), decreasing = TRUE)
+head(gene_frequency)
+```
+
+We want the genes that show up in more than one pathway to be plotted _only_ and for genes in all three pathways to be plotted _first_, followed by genes that show up in 2 pathways.
+We've already sorted such that the genes in 3 pathways are at the beginning of the list, now we'll filter out the 
+We need to snag the _names_ of the `gene_frequency` vector here, because that's where the gene symbols are.
+
+```{r}
+multiple_pathway_genes <- names(gene_frequency)[gene_frequency > 1]
+```
+
+Let's create a data frame specifically for plotting that removes the genes that are only in a single pathway.
+
+```{r}
+plotting_df <- pos_gene_pathway_df %>%
+  # Include only genes that are in multiple pathways
+  dplyr::filter(gene %in% multiple_pathway_genes) %>%
+  # Ensures that when we plot the genes in three pathways will come first
+  # And also make the pathway names a little "prettier" for plotting by removing
+  # underscores
+  dplyr::mutate(gene = factor(gene, levels = multiple_pathway_genes),
+                pathway_id = stringr::str_replace_all(pathway_id, "_", " "))
+```
+
+Okay, let's make a heatmap/tile plot where the pathways are rows and the genes are columns.
+
+```{r}
+ggplot(plotting_df, 
+       aes(gene, pathway_id)) +
+  # Use burgundy to indicate pathway leading edge membership
+  geom_tile(fill = "#800020") +
+  scale_fill_identity() +
+  # Another built-in theme
+  theme_linedraw() +
+  labs(y = "pathway",
+       title = "Positive NES Leading Edge",
+       subtitle = "Genes in Multiple Pathways") +
+  # Adjust the angle of the x axis labels (genes) and make a bit smaller
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5,
+                                   size = 6),
+        # Center the plot title and make it bold
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        # Center the plot subtitle
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+#### Heatmap of transformed RNA-seq data for leading edge genes
+
+Now, let's make a heatmap of the transformed values for the genes that are in the leading edge for the "E2F TARGETS" Hallmark gene set.
+First, let's get the transformed values into matrix form.
+
+```{r}
+# Extract the matrix of VST RNA-seq data
+transformed_rnaseq_mat <- assay(vst_data)
+```
+
+We'll only display genes that are in the Hallmark E2F Targets leading edge subset, which we can access by name with `$` from our list of leading edge genes for pathways with significant, positive NES (`positive_leading_list`).
+But, there's a problem: these are gene symbols and the row names of the transformed RNA-seq matrix are Ensembl gene IDs!
+We used the `filtered_dge_df` data frame of statistics for our GSEA step itself and this data frame has both Ensembl gene IDs and gene symbols.
+So we can use that to grab the Ensembl gene IDs that are in the leading edge for the Hallmark E2F Targets pathway.
+
+```{r}
+e2f_ensg_ids <- filtered_dge_df %>%
+  # Rows with gene symbols that are in the leading edge for E2F targets
+  dplyr::filter(gene_symbol %in% positive_leading_list$HALLMARK_E2F_TARGETS) %>%
+  # Get a vector of Ensembl gene IDs in that row where the names of the vector
+  # are the corresponding gene symbol
+  dplyr::pull(gene_id, name = gene_symbol)
+```
+
+Now subset the transformed RNA-seq matrix to the E2F targets leading edge genes only and z-score for display.
+
+```{r}
+# Use the Ensembl gene IDs to pull out the genes (rows) in the leading edge
+e2f_mat <- transformed_rnaseq_mat[e2f_ensg_ids, ]
+# "Convert" rownames to gene symbols using the names of the vector that contains
+# the Ensembl gene identifiers
+rownames(e2f_mat) <- names(e2f_ensg_ids)
+# Calculate z-scores for display
+e2f_mat <- (e2f_mat - rowMeans(e2f_mat)) / matrixStats::rowSds(e2f_mat)
+```
+
+We probably want to include the amplified, non-amplified status information as heatmap annotation.
+Let's set that up in the next chunk.
+
+```{r}
+# We can snag the sample IDs and the status information from our DESeqTransform
+# object
+sample_annotation_df <- data.frame(
+  sample_id = vst_data$names,
+  status = vst_data$status
+) %>%
+  # But ComplexHeatmap wants the sample IDs as rownames
+  tibble::column_to_rownames("sample_id")
+
+# The Okabe Ito palette is recommended for those with color vision deficiencies  
+status_colors <- palette.colors(palette = "Okabe-Ito")[2:3]
+sample_annotation_colors <- list(
+  status = c(
+    "Amplified" = status_colors[[1]],
+    "Nonamplified" = status_colors[[2]]
+  )
+)
+
+# Now to make the actual object we pass to Heatmap
+column_annotation <- HeatmapAnnotation(
+  df = sample_annotation_df,
+  col = sample_annotation_colors,
+  annotation_label = c("MYCN Status")
+)
+```
+
+One thing to remember is that genes that contribute to an enrichment score won't _necessarily_ be significantly differentially expressed.
+So let's add a _row annotation_ that includes the log2 fold change information because log2 fold change is how we rank genes for GSEA.
+
+```{r}
+row_annotation_df <- filtered_dge_df %>%
+  # Rows with gene symbols that are in the leading edge for E2F targets
+  dplyr::filter(gene_symbol %in% positive_leading_list$HALLMARK_E2F_TARGETS) %>%
+  dplyr::select(gene_symbol, log2FoldChange) %>%
+  tibble::column_to_rownames("gene_symbol")
+
+# To make a row annotation object, we use rowAnnotation()
+row_annotation <- rowAnnotation(
+  df = row_annotation_df,
+  annotation_label = c("log2 fold change")
+)
+```
+
+Now we're ready to make our heatmap!
+
+```{r}
+ComplexHeatmap::Heatmap(e2f_mat,
+                        # Add annotation bars to the top of the heatmap
+                        top_annotation = column_annotation,
+                        # Add annotation to the rows
+                        right_annotation = row_annotation,
+                        # This will be used as the label for the color bar
+                        # of the cells of the heatmap itself
+                        name = "z-score",
+                        # Make the gene symbols smaller
+                        row_names_gp = gpar(fontsize = 4),
+                        # Make the sample names smaller
+                        column_names_gp = gpar(fontsize = 8),
+                        # Display sample names on a 45 degree angle
+                        column_names_rot = 45)
+```
+## Session Info
+
+```{r}
+sessionInfo()
+```
