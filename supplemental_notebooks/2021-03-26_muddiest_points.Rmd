@@ -387,7 +387,7 @@ row_annotation_df <- filtered_dge_df %>%
 
 # Color palette we'll use for LFC
 col_fun <- circlize::colorRamp2(c(min(row_annotation_df$log2FoldChange),
-                                  to = max(row_annotation_df$log2FoldChange)),
+                                  max(row_annotation_df$log2FoldChange)),
                                 c("white", "navy"))
 
 # To make a row annotation object, we use rowAnnotation()
