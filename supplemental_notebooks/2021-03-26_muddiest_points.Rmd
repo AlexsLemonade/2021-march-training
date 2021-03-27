@@ -24,7 +24,7 @@ This notebook is designed to cover questions that came up during the pathway ana
 # GSEA Visualization
 
 We'll cover some alternate ways to visualize information returned by `GSEA()`.
-These are inspired by plots that are returned by the GSEA Desktop application or GenePattern module.
+We'll also try to introduce you to basic functionality of packages that make plots you may want to make for your own research (e.g., Venn diagrams).
 
 ## Set up
 
@@ -44,15 +44,14 @@ library(magrittr)
 # Tile plot
 library(ggplot2)
 ```
-We're also going to use a package caller `eulerr` that isn't installed for all users of our server.
+
+We're also going to use packages called `eulerr` and `VennDiagram` that aren't installed for all users of our server.
 If you ever need to install a package, you can use `install.packages()` like so:
 
 ```{r}
-install.packages("eulerr")
-library(eulerr)
+install.packages(c("eulerr", "VennDiagram"))
 ```
-
-(If you've downloaded this notebook, you may see some messages when you run this chunk.)
+(If you've downloaded this notebook, you may see some different messages when you run this chunk; that's okay and expected!)
 
 ### Read in differential expression results & expression data
 
@@ -115,6 +114,15 @@ Make a `DESeqDataSet` and perform variance stabilizing transformation ahead of o
 ddset <- DESeqDataSet(txi,
                       design = ~ 1)
 vst_data <- vst(ddset, blind = TRUE)
+```
+
+### Plot output directory
+
+```{r}
+plots_dir <- file.path("plots", "NB-cell")
+if (!dir.exists(plots_dir)) {
+  dir.create(plots_dir, recursive = TRUE)
+}
 ```
 
 ## Perform GSEA
@@ -214,13 +222,15 @@ We can write a custom function to calculate the Jaccard index for two character 
 
 ```{r}
 calculate_jaccard <- function(x, y) {
-  # Calculate Jaccard index for two character vectors, x and y
+  # Calculate Jaccard index for two character vectors, x and y, which is the
+  # size of the intersection divided by the size of the union
   length(intersect(x, y)) / length(union(x, y))
 }
 ```
 
 Let's calculate the Jaccard index between each pair of pathways' leading edge subsets.
 Pairs of pathways with a higher Jaccard index have more similar leading edge subsets.
+`combn()` is a function that will generate all combinations of the elements of `x` (the first argument) taken `m` (the second argument) at a time; we want it to return a _list_ we can use with `purrr` so we use `simplify = FALSE`.
 
 ```{r}
 neg_leading_jaccard <- 
@@ -228,7 +238,7 @@ neg_leading_jaccard <-
   combn(neg_leading_list, 2, simplify = FALSE) %>% 
   # Calculate the Jaccard index between the two vector of leading edge subsets
   purrr::map(~ calculate_jaccard(.x[[1]], .x[[2]])) %>%
-  # Return a vector, not a list
+  # Return a numeric vector, not a list
   purrr::flatten_dbl()
 ```
 
@@ -241,15 +251,16 @@ neg_jaccard_df <-
   data.frame(t(combn(names(neg_leading_list), 2))) %>%
   # Add Jaccard index
   dplyr::mutate(jaccard_index = neg_leading_jaccard,
-                # Remove underscores from pathway 1 names
+                # Replace underscores with spaces in pathway 1 names
                 X1 = stringr::str_replace_all(X1, "_", " "),
-                # Remove underscores from pathway 2 names
+                # Replace underscores with spaces in pathway 2 names
                 X2 = stringr::str_replace_all(X2, "_", " "))
 
 neg_jaccard_df
 ```
 
 Now we'll plot the pairwise Jaccard index values using `geom_tile()`.
+One thing to note is that text that looks squished in display in a notebook might be a good size for a plot saved to file (or vice versa depending on your set up).
 
 ```{r}
 neg_jaccard_df %>%
@@ -258,6 +269,9 @@ neg_jaccard_df %>%
              y = X2,
              fill = jaccard_index)) +
   geom_tile() +
+  # Add text to the tiles that indicates the Jaccard index values
+  geom_text(aes(x = X1, y = X2, label = round(jaccard_index, 2)), 
+            color = "black", size = 3) +
   # White-dark green gradient, bounded at 0 and 1 like the metric we are using
   scale_fill_gradientn(
     colors = c("#FFFFFF", "#006400"),
@@ -276,6 +290,25 @@ neg_jaccard_df %>%
         # Center the plot title and make it bold
         plot.title = element_text(face = "bold", hjust = 0.5))
 ```
+Save this plot with `ggsave()`.
+
+```{r}
+ggsave(file.path(plots_dir, "negative_NES_leading_edge_jaccard.png"), 
+       plot = last_plot(),
+       width = 11,
+       height = 7)
+```
+
+If we were not particularly concerned about "mixing" the pathways with positive or negative scores, we could use `enrichplot::pairwise_termsim()` with the `method = "JC"` argument to calculate the Jaccard similarity instead.
+From the documentation for this function, it's not totally clear if this includes the core enrichment genes _only_.
+
+```{r}
+# Add a matrix of Jaccard similarity values to the @termsim slot of gsea_results
+gsea_results <- enrichplot::pairwise_termsim(gsea_results, method = "JC")
+
+# Let's take a look at the "top left" corner of that matrix
+gsea_results@termsim[1:5, 1:5]
+```
 
 #### Venn diagram
 
@@ -287,7 +320,7 @@ positive_nes_df <- gsea_results_df %>%
   dplyr::select(ID, core_enrichment)
 ```
 
-The `eulerr` package wants a list. 
+The `eulerr` package, which we will use for visualization, can use a list to calculate overlaps. 
 We'll show you a different way to get a list where each element is a vector that contains the gene IDs for the leading edge subset.
 (Before we used `tidyr::separate_rows()` and then `split()`.)
 
@@ -304,12 +337,53 @@ pos_leading_list <- positive_nes_df %>%
 Now for a Venn diagram!
 
 ```{r}
-plot(venn(pos_leading_list))
+pos_venn <- plot(eulerr::venn(pos_leading_list), 
+                 # Replace the underscores with spaces in the labels
+                 labels = stringr::str_replace_all(names(pos_leading_list), 
+                                                   "_", " "))
+pos_venn
+```
+
+To save this plot, we need to use `png()` and `dev.off()` because it is not a `ggplot`.
+
+```{r}
+png(file.path(plots_dir, "positive_NES_leading_edge_venn.png"),
+    width = 7,
+    height = 7,
+    units = "in",
+    res = 300)
+pos_venn
+dev.off()
+```
+
+To get more information about the identity of the genes that comprise the overlaps, we can use `calculate.overlap()` from the `VennDiagram` package.
+
+```{r}
+pos_overlap_list <- VennDiagram::calculate.overlap(pos_leading_list)
+head(pos_overlap_list, n = 2)
 ```
 
 ### Heatmap of transformed RNA-seq data for leading edge genes
 
-Now, let's make a heatmap of the transformed values for the genes that are in the leading edge for the "E2F TARGETS" Hallmark gene set.
+One of the pathways with a significant positive NES is "HALLMARK E2F TARGETS."
+Let's look at the GSEA plot for this pathway.
+
+```{r}
+enrichplot::gseaplot(gsea_results,
+                     geneSetID = "HALLMARK_E2F_TARGETS",
+                     title = "Hallmark E2F Targets",
+                     color.line = "#0066FF")
+```
+
+This is a `ggplot` "under the hood" so we can save this with `ggsave()`, too.
+
+```{r}
+ggsave(file.path(plots_dir, "E2F_targets_GSEA.png"),
+       plot = last_plot())
+```
+
+Sometimes folks will plot expression values of individual genes using GSEA results as a guide.
+Below, we'll make a heatmap of the transformed values for the genes that are in the leading edge for the "E2F TARGETS" Hallmark gene set.
 First, let's get the transformed values into matrix form.
 
 ```{r}
@@ -317,7 +391,7 @@ First, let's get the transformed values into matrix form.
 transformed_rnaseq_mat <- assay(vst_data)
 ```
 
-We'll only display genes that are in the Hallmark E2F Targets leading edge subset, which we can access by name with `$` from our list of leading edge genes for pathways with significant, positive NES (`positive_leading_list`).
+We'll only display genes that are in the Hallmark E2F Targets leading edge subset, which we can access by name with `$` from our list of leading edge genes for pathways with significant, positive NES (`pos_leading_list`).
 But, there's a problem: these are gene symbols and the row names of the transformed RNA-seq matrix are Ensembl gene IDs!
 We used the `filtered_dge_df` data frame of statistics for our GSEA step itself and this data frame has both Ensembl gene IDs and gene symbols.
 So we can use that to grab the Ensembl gene IDs that are in the leading edge for the Hallmark E2F Targets pathway.
@@ -337,7 +411,7 @@ Now subset the transformed RNA-seq matrix to the E2F targets leading edge genes 
 # Use the Ensembl gene IDs to pull out the genes (rows) in the leading edge
 e2f_mat <- transformed_rnaseq_mat[e2f_ensg_ids, ]
 # "Convert" rownames to gene symbols using the names of the vector that contains
-# the Ensembl gene identifiers
+# the Ensembl gene identifiers. These will necessarily be in the same order.
 rownames(e2f_mat) <- names(e2f_ensg_ids)
 # Calculate z-scores for display
 e2f_mat <- (e2f_mat - rowMeans(e2f_mat)) / matrixStats::rowSds(e2f_mat)
@@ -375,6 +449,7 @@ column_annotation <- HeatmapAnnotation(
 
 One thing to remember is that genes that contribute to an enrichment score won't _necessarily_ be significantly differentially expressed.
 So let's add a _row annotation_ that includes the log2 fold change information because log2 fold change is how we rank genes for GSEA.
+We need to start by getting a data frame for the Hallmark E2F Target leading edge subset that has the log2 fold change as a column and the gene identifiers (here gene symbols) as the rownames.
 
 ```{r}
 row_annotation_df <- filtered_dge_df %>%
@@ -384,7 +459,12 @@ row_annotation_df <- filtered_dge_df %>%
   dplyr::select(gene_symbol, log2FoldChange) %>%
   # Gene identifiers, which are our row identifiers, will need to be row names
   tibble::column_to_rownames("gene_symbol")
+```
 
+Because we're looking at the leading edge genes for a pathway with a positive NES, let's create a sequential palette where values around zero will be represented in white and the values that are most highly positive are a darker color.
+Here we'll use navy blue, which is a built in color in R.
+
+```{r}
 # Color palette we'll use for LFC
 col_fun <- circlize::colorRamp2(c(min(row_annotation_df$log2FoldChange),
                                   max(row_annotation_df$log2FoldChange)),
@@ -426,6 +506,46 @@ ComplexHeatmap::Heatmap(e2f_mat,
                         # Display sample names on a 45 degree angle
                         column_names_rot = 45)
 ```
+
+Let's save this to a file.
+
+```{r}
+png(file.path(plots_dir, "E2F_targets_leading_edge_heatmap.png"), 
+    width = 11, 
+    height = 7, 
+    units = "in", 
+    res = 300)
+ComplexHeatmap::Heatmap(e2f_mat,
+                        # Add annotation bars to the top of the heatmap
+                        top_annotation = column_annotation,
+                        # Add annotation to the rows
+                        right_annotation = row_annotation,
+                        # Split the heatmap based on MYCN amplification
+                        # status
+                        column_split = sample_annotation_df$status,
+                        # This will be used as the label for the color bar
+                        # of the cells of the heatmap itself
+                        name = "z-score",
+                        # Make the gene symbols smaller
+                        row_names_gp = gpar(fontsize = 4),
+                        # Make the sample names smaller
+                        column_names_gp = gpar(fontsize = 8),
+                        # Display sample names on a 45 degree angle
+                        column_names_rot = 45,
+                        # Higher resolution for output (be careful with PDF output!)
+                        use_raster = FALSE)
+# Shut down current graphics device
+dev.off()
+```
+
+## Parting thoughts
+
+We hope a take home message of this notebook is that R has a rich ecosystem of packages that allow you to make publication ready plots.
+It's also usually possible to accomplish something in R multiple ways.
+[`enrichplot`](https://bioconductor.org/packages/release/bioc/html/enrichplot.html) is capable of producing [many different kinds of visualizations](http://yulab-smu.top/clusterProfiler-book/chapter12.html) (sometimes the documentation can be sparse).
+Often if we can figure out how to extract data out of specialized objects and wrangle it, we have more control over what kinds of calculations we can perform and can take full advantage of plot customization in `ggplot2`.
+These data wrangling steps can take a lot of trial and error, even for experienced R programmers like your instructors, so don't be discouraged and keep practicing!
+
 # Session Info
 
 ```{r}
