@@ -8,11 +8,11 @@ output:
     toc_float: true
 ---
 
-## Introduction
+# Introduction
 
 This notebook is designed to cover questions that came up during the pathway analysis module.
 
-### How to use this notebook
+## How to use this notebook
 
 1. Click the `Code` button in the upper right of this page and choose `Download Rmd` to save this notebook (`2021-03-26_muddiest_points.Rmd`) to your computer.   
 2. Navigate to RStudio server.  
@@ -21,9 +21,12 @@ This notebook is designed to cover questions that came up during the pathway ana
 5. Click `Choose file` and find this `Rmd` file on your computer.   
 6. Click `OK`.
 
-## GSEA Visualization
+# GSEA Visualization
 
 We'll cover some alternate ways to visualize information returned by `GSEA()`.
+These are inspired by plots that are returned by the GSEA Desktop application or GenePattern module.
+
+## Set up
 
 ### Required libraries
 
@@ -41,6 +44,15 @@ library(magrittr)
 # Tile plot
 library(ggplot2)
 ```
+We're also going to use a package caller `eulerr` that isn't installed for all users of our server.
+If you ever need to install a package, you can use `install.packages()` like so:
+
+```{r}
+install.packages("eulerr")
+library(eulerr)
+```
+
+(If you've downloaded this notebook, you may see some messages when you run this chunk.)
 
 ### Read in differential expression results & expression data
 
@@ -105,18 +117,20 @@ ddset <- DESeqDataSet(txi,
 vst_data <- vst(ddset, blind = TRUE)
 ```
 
-### Perform GSEA
+## Perform GSEA
 
-#### Gene sets
+### Gene sets
 
-We'll use Hallmark gene sets like we did during instruction.
+We'll use Hallmark gene sets like we did during instruction and we're working with human data.
 
 ```{r}
 hs_hallmarks_df <- msigdbr(species = "Homo sapiens",
                            category = "H")
 ```
 
-#### Run GSEA
+### Run GSEA
+
+Now we're ready to run GSEA using the same settings we used during instruction.
 
 ```{r}
 gsea_results <- GSEA(geneList = lfc_vector,  # ordered ranked gene list
@@ -132,10 +146,11 @@ Let's get the `result` slot into a data frame so we can more easily use `tidyver
 
 ```{r}
 gsea_results_df <- data.frame(gsea_results@result)
+colnames(gsea_results_df)
 ```
 
 The `core_enrichment` column contains the genes that are in the leading edge subset of genes for that pathway.
-These are the genes that "contribute most to the enrichment result." ([GSEA docs](https://www.gsea-msigdb.org/gsea/doc/GSEAUserGuideTEXT.htm#_Gene_Set_Details_1))
+**These are the genes that "contribute most to the enrichment result."** ([GSEA docs](https://www.gsea-msigdb.org/gsea/doc/GSEAUserGuideTEXT.htm#_Gene_Set_Details_1))
 
 ![](diagrams/subramanian_fig1.jpg)
 
@@ -147,26 +162,29 @@ Let's look at the _current format_ for these leading edge genes.
 gsea_results_df %>%
   dplyr::pull(core_enrichment)
 ```
-
 This could be formatted in a way that is more helpful!
-And we probably want to split this information up by whether a pathway has a _positive_ or _negative_ Normalized Enrichment Score (NES).
+Luckily, we can take advantage of the fact that the genes are split up by `/`. 
+And we'll probably want to split this information up by whether a pathway has a _positive_ or _negative_ Normalized Enrichment Score (NES).
 
-#### Visualizing Jaccard Index values between leading edge subsets
+### Visualizing overlap in leading edge subsets
 
-Let's look at leading edge subsets for pathways with significant negative NES values.
+It can be helpful to understand if the pathways that come up as significant have overlapping genes.
+
+Let's look at _leading edge genes_ for pathways.
+Again, these are the genes in a pathway that make up the core of the enrichment signal.
 There are many more significant negative pathways than positive pathways, so comparing the leading edge subsets might be more interesting.
 
 First, let's use `tidyr::separate_rows()` to get a data frame where one column is the pathway and one column is gene symbols.
 
 ```{r}
-# Pathways down in amplified cell lines
+# Pathways **down** in amplified cell lines
 neg_gene_pathway_df <- gsea_results_df %>%
   # Only rows that have negative NES
   dplyr::filter(NES < 0) %>%
-  # Selected columns: the pathway name or ID, NES, adj p-values, and 
-  # leading edge genes
+  # Selected columns: the pathway name or ID and leading edge genes
   dplyr::select(ID, core_enrichment) %>%
-  # Long format for gene-pathway pairs
+  # Long format for gene-pathway pairs, splitting on the / that separates
+  # genes
   tidyr::separate_rows(core_enrichment, sep = "/") %>%
   # Rename the columns
   dplyr::rename(pathway_id = ID,
@@ -182,45 +200,60 @@ neg_leading_list <- split(neg_gene_pathway_df$gene,
                           neg_gene_pathway_df$pathway_id)
 ```
 
-The [Jaccard index](https://en.wikipedia.org/wiki/Jaccard_index) is a measure of similarity between two sets.
+Now we can examine the leading edge subset of genes for a pathway using the pathway name (or we could use `dplyr::filter()` on the data frame above, if we prefer).
+
+```{r}
+neg_leading_list[["HALLMARK_APOPTOSIS"]]
+```
+
+#### Jaccard index
+
+The [Jaccard index](https://en.wikipedia.org/wiki/Jaccard_index) (also called Jaccard similarity) is a measure of similarity between two sets.
 The values are bounded between 0 and 1, where 0 indicates no overlap and 1 indicates perfect overlap.
 We can write a custom function to calculate the Jaccard index for two character vectors.
 
 ```{r}
 calculate_jaccard <- function(x, y) {
+  # Calculate Jaccard index for two character vectors, x and y
   length(intersect(x, y)) / length(union(x, y))
 }
 ```
 
 Let's calculate the Jaccard index between each pair of pathways' leading edge subsets.
+Pairs of pathways with a higher Jaccard index have more similar leading edge subsets.
 
 ```{r}
-# Get each pair of pathways
-neg_leading_jaccard <- combn(neg_leading_list, 2, simplify = FALSE) %>%
-  # Calculate the Jaccard index between the two vectors of leading edge subsets
+neg_leading_jaccard <- 
+  # Get a list that is comprised of each pair of pathways
+  combn(neg_leading_list, 2, simplify = FALSE) %>% 
+  # Calculate the Jaccard index between the two vector of leading edge subsets
   purrr::map(~ calculate_jaccard(.x[[1]], .x[[2]])) %>%
   # Return a vector, not a list
   purrr::flatten_dbl()
 ```
 
-Make into a data frame for plotting with `geom_tile()`.
+Make into a data frame for plotting with `ggplot2`, where each row will contain a pairwise Jaccard value.
 
 ```{r}
 # We'll want to add back in the names of the pathways!
-neg_jaccard_df <- data.frame(t(combn(names(neg_leading_list), 2))) %>%  # Get the combination of pathway names
-  dplyr::mutate(jaccard_index = neg_leading_jaccard,  # Add jaccard index
-                X1 = stringr::str_replace_all(X1, "_", " "),  # Remove underscores from pathway 1 names
-                X2 = stringr::str_replace_all(X2, "_", " ")) # Remove underscores from pathway 2 names
+neg_jaccard_df <- 
+  # Get the combination of pathway names
+  data.frame(t(combn(names(neg_leading_list), 2))) %>%
+  # Add Jaccard index
+  dplyr::mutate(jaccard_index = neg_leading_jaccard,
+                # Remove underscores from pathway 1 names
+                X1 = stringr::str_replace_all(X1, "_", " "),
+                # Remove underscores from pathway 2 names
+                X2 = stringr::str_replace_all(X2, "_", " "))
 
 neg_jaccard_df
 ```
 
-Now we'll plot the pairwise Jaccard index values using `ggplot2`.
+Now we'll plot the pairwise Jaccard index values using `geom_tile()`.
 
 ```{r}
 neg_jaccard_df %>%
-  # Make a tile plot again, but now use the Jaccard index values for the 
-  # fills
+  # Make a tile plot of the pathway similarity values
   ggplot(aes(x = X1,
              y = X2,
              fill = jaccard_index)) +
@@ -231,18 +264,50 @@ neg_jaccard_df %>%
     limits = c(0, 1),
     name = "Jaccard index"  # What to call it in the legend
   ) +
+  # Built in theme
   theme_classic() +
   # Remove the x and y axis labels
   labs(x = NULL, 
        y = NULL,
        # Add a title that's broken up over two lines
        title = "Negative NES Pathway\nLeading Edge Jaccard Index") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 0.9),
+  # Rotate x-axis text 45 degrees
+  theme(axis.text.x = element_text(hjust = 1, angle = 45),
         # Center the plot title and make it bold
         plot.title = element_text(face = "bold", hjust = 0.5))
 ```
 
-#### Heatmap of transformed RNA-seq data for leading edge genes
+#### Venn diagram
+
+Let's make a Venn diagram examining the overlap between leading edge subsets for pathways that have significant positive NES values.
+
+```{r}
+positive_nes_df <- gsea_results_df %>%
+  dplyr::filter(NES > 0) %>%
+  dplyr::select(ID, core_enrichment)
+```
+
+The `eulerr` package wants a list. 
+We'll show you a different way to get a list where each element is a vector that contains the gene IDs for the leading edge subset.
+(Before we used `tidyr::separate_rows()` and then `split()`.)
+
+```{r}
+pos_leading_list <- positive_nes_df %>%
+  # Get a vector of the core enrichment genes
+  dplyr::pull(core_enrichment) %>%
+  # Split into individual genes using / as the pattern for splitting
+  stringr::str_split(., pattern = "/") %>%
+  # Set the names of the list as the pathway names
+  purrr::set_names(positive_nes_df %>% dplyr::pull(ID))
+```
+
+Now for a Venn diagram!
+
+```{r}
+plot(venn(pos_leading_list))
+```
+
+### Heatmap of transformed RNA-seq data for leading edge genes
 
 Now, let's make a heatmap of the transformed values for the genes that are in the leading edge for the "E2F TARGETS" Hallmark gene set.
 First, let's get the transformed values into matrix form.
@@ -258,16 +323,9 @@ We used the `filtered_dge_df` data frame of statistics for our GSEA step itself 
 So we can use that to grab the Ensembl gene IDs that are in the leading edge for the Hallmark E2F Targets pathway.
 
 ```{r}
-# Get the gene symbols in the leading edge for E2F target
-e2f_gene_symbols <- gsea_results_df %>%
-  dplyr::select(ID, core_enrichment) %>%
-  dplyr::filter(ID == "HALLMARK_E2F_TARGETS") %>%
-  tidyr::separate_rows(core_enrichment, sep = "/") %>%
-  dplyr::pull(core_enrichment)
-
 e2f_ensg_ids <- filtered_dge_df %>%
   # Rows with gene symbols that are in the leading edge for E2F targets
-  dplyr::filter(gene_symbol %in% e2f_gene_symbols) %>%
+  dplyr::filter(gene_symbol %in% pos_leading_list$HALLMARK_E2F_TARGETS) %>%
   # Get a vector of Ensembl gene IDs in that row where the names of the vector
   # are the corresponding gene symbol
   dplyr::pull(gene_id, name = gene_symbol)
@@ -321,18 +379,26 @@ So let's add a _row annotation_ that includes the log2 fold change information b
 ```{r}
 row_annotation_df <- filtered_dge_df %>%
   # Rows with gene symbols that are in the leading edge for E2F targets
-  dplyr::filter(gene_symbol %in% e2f_gene_symbols) %>%
+  dplyr::filter(gene_symbol %in% pos_leading_list$HALLMARK_E2F_TARGETS) %>%
+  # Only need the gene symbol and LFC column
   dplyr::select(gene_symbol, log2FoldChange) %>%
+  # Gene identifiers, which are our row identifiers, will need to be row names
   tibble::column_to_rownames("gene_symbol")
+
+# Color palette we'll use for LFC
+col_fun <- circlize::colorRamp2(c(min(row_annotation_df$log2FoldChange),
+                                  to = max(row_annotation_df$log2FoldChange)),
+                                c("white", "navy"))
 
 # To make a row annotation object, we use rowAnnotation()
 row_annotation <- rowAnnotation(
   df = row_annotation_df,
+  col = list(log2FoldChange = col_fun),
   annotation_label = c("log2 fold change")
 )
 ```
 
-We can do something where we split our heatmap by a categorical variable.
+`ComplexHeatmap` allows us to split up rows or columns by a categorical variable.
 Here we'd use status, but let's double check that our samples are in the same order in `sample_annotation_df` and the expression matrix.
 
 ```{r}
@@ -347,6 +413,8 @@ ComplexHeatmap::Heatmap(e2f_mat,
                         top_annotation = column_annotation,
                         # Add annotation to the rows
                         right_annotation = row_annotation,
+                        # Split the heatmap based on MYCN amplification
+                        # status
                         column_split = sample_annotation_df$status,
                         # This will be used as the label for the color bar
                         # of the cells of the heatmap itself
@@ -358,7 +426,7 @@ ComplexHeatmap::Heatmap(e2f_mat,
                         # Display sample names on a 45 degree angle
                         column_names_rot = 45)
 ```
-## Session Info
+# Session Info
 
 ```{r}
 sessionInfo()
